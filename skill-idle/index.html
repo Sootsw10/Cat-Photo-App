@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skill Grind</title>
+<style>
+:root{--bg:#0f1220;--panel:#181c30;--panel2:#20253d;--text:#e8eaf6;--muted:#9aa0c3;--accent:#7c5cff;--good:#3ddc97;--warn:#ffb547;--bad:#ff5c7a;--border:#2c3254}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+header h1{font-size:18px;margin:0 auto 0 0}
+.stat b{font-size:18px}.stat small{color:var(--muted);margin-left:4px}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h2{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
+.slot{min-height:118px;display:flex;flex-direction:column;gap:6px}
+.slot .top{display:flex;align-items:center;gap:8px}
+.icon{font-size:26px;line-height:1}
+.name{font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+.bar{height:16px;background:var(--panel2);border-radius:8px;overflow:hidden;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#a78bff);border-radius:8px}
+.bar.done>i{background:var(--good)}
+.bar.xp{height:8px;cursor:default}.bar.xp>i{background:var(--warn)}
+.row{display:flex;align-items:center;gap:6px;justify-content:space-between}
+button,select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent)}
+button.go{background:var(--good);border-color:var(--good);color:#0b2a1c;font-weight:600}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.x{padding:2px 8px;margin-left:auto}
+select{width:100%}
+.buy{border-style:dashed;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center}
+nav{display:flex;gap:6px;margin:18px 0 10px;flex-wrap:wrap}
+nav button.on{background:var(--accent);border-color:var(--accent)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:10px}
+.item .grow{flex:1;min-width:0}
+.badge{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--panel2);color:var(--muted);margin-left:4px}
+.badge.c{background:#173d2e;color:var(--good)}
+.locked>.icon,.locked>.grow{opacity:.55}
+#toasts{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:10;width:min(420px,calc(100% - 32px))}
+.toast{background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;animation:f 4s forwards}
+@keyframes f{0%{opacity:0;transform:translateY(8px)}8%,85%{opacity:1;transform:none}100%{opacity:0}}
+.big{font-size:28px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 Skill Grind</h1>
+  <span class="stat">🪙 <b id="coins">0</b></span>
+  <span class="stat"><b id="rate">0</b><small>/s auto</small></span>
+  <span class="stat">🦉 <b id="wis">0</b><small>wisdom</small></span>
+</header>
+<div class="wrap">
+  <h2>Training slots <span class="muted" style="text-transform:none;letter-spacing:0">— tap a bar to cram</span></h2>
+  <div class="grid" id="slots"></div>
+  <nav id="tabs">
+    <button data-tab="skills" class="on">Skills</button>
+    <button data-tab="upgrades">Upgrades</button>
+    <button data-tab="mastery">Mastery</button>
+  </nav>
+  <section id="skills" class="list"></section>
+  <section id="upgrades" class="list" hidden></section>
+  <section id="mastery" hidden></section>
+</div>
+<div id="toasts"></div>
+<script>
+const SKILLS=[
+  {id:'juggle',name:'Juggling',icon:'🤹',cost:0,time:2,pay:1},
+  {id:'cook',name:'Cooking',icon:'🍳',cost:60,time:5,pay:8},
+  {id:'fit',name:'Fitness',icon:'💪',cost:700,time:10,pay:55},
+  {id:'draw',name:'Drawing',icon:'🎨',cost:8e3,time:20,pay:420},
+  {id:'music',name:'Guitar',icon:'🎸',cost:1e5,time:40,pay:3600},
+  {id:'code',name:'Coding',icon:'💻',cost:1.4e6,time:80,pay:32e3},
+  {id:'lang',name:'Languages',icon:'🗣️',cost:2e7,time:160,pay:3e5},
+  {id:'chess',name:'Chess',icon:'♟️',cost:3e8,time:320,pay:3e6},
+  {id:'martial',name:'Martial Arts',icon:'🥋',cost:5e9,time:640,pay:3.2e7},
+  {id:'astro',name:'Astrophysics',icon:'🔭',cost:8e10,time:1280,pay:3.5e8},
+];
+const UPGRADES=[
+  {id:'focus',name:'Focus',icon:'🎯',desc:'+15% training speed',base:120,g:2.3},
+  {id:'motiv',name:'Motivation',icon:'🔥',desc:'+25% coin payout',base:250,g:2.5},
+  {id:'notes',name:'Study Notes',icon:'📓',desc:'+25% XP gained',base:400,g:2.4},
+  {id:'hustle',name:'Hustle',icon:'👆',desc:'Cramming adds +0.3s more progress',base:150,g:2.1},
+];
+const RANKS=[[0,'Novice'],[10,'Apprentice'],[25,'Adept'],[50,'Expert'],[100,'Master'],[200,'Grandmaster'],[400,'Legend']];
+const MAX_SLOTS=12, OFFLINE_CAP=8*3600, KEY='skillgrind-v1';
+const D=Object.fromEntries(SKILLS.map(s=>[s.id,s]));
+
+function fresh(keep={}){
+  return {coins:0,runEarned:0,lifetime:keep.lifetime||0,wisdom:keep.wisdom||0,prestiges:keep.prestiges||0,
+    slots:[{s:null,p:0}],
+    skills:Object.fromEntries(SKILLS.map((d,i)=>[d.id,{u:i===0,lv:0,xp:0,coach:false}])),
+    upg:Object.fromEntries(UPGRADES.map(u=>[u.id,0])),last:Date.now()};
+}
+let S=load();
+
+function load(){
+  try{const r=JSON.parse(localStorage.getItem(KEY));if(r){const f=fresh();
+    return {...f,...r,skills:{...f.skills,...r.skills},upg:{...f.upg,...r.upg}};}}catch(e){}
+  return fresh();
+}
+function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+// ---- formulas ----
+const coinMult=()=>(1+.25*S.upg.motiv)*(1+.05*S.wisdom);
+const xpMult=()=>(1+.25*S.upg.notes)*(1+.02*S.wisdom);
+const payout=id=>{const lv=S.skills[id].lv;return D[id].pay*(1+.1*lv)*2**Math.floor(lv/25)*coinMult()};
+const cycleTime=id=>D[id].time/((1+.15*S.upg.focus)*(1+.04*S.skills[id].lv));
+const xpNeed=lv=>Math.ceil(3+2*lv**1.5);
+const rank=lv=>RANKS.filter(r=>lv>=r[0]).pop()[1];
+const coachCost=id=>Math.max(25,D[id].cost*3);
+const slotCost=()=>50*6**(S.slots.length-1);
+const upgCost=u=>Math.ceil(u.base*u.g**S.upg[u.id]);
+const wisdomTotal=()=>Math.floor(Math.sqrt(S.lifetime/1e5));
+const wisdomGain=()=>Math.max(0,wisdomTotal()-S.wisdom);
+const rate=()=>S.slots.reduce((a,sl)=>a+(sl.s&&S.skills[sl.s].coach?payout(sl.s)/cycleTime(sl.s):0),0);
+
+// ---- core ----
+function earn(n){S.coins+=n;S.runEarned+=n;S.lifetime+=n}
+function award(id,n){
+  earn(payout(id)*n);
+  const st=S.skills[id];st.xp+=n*xpMult();
+  const before=st.lv;
+  while(st.xp>=xpNeed(st.lv)){st.xp-=xpNeed(st.lv);st.lv++}
+  if(st.lv!==before&&!offline){
+    if(rank(st.lv)!==rank(before))toast(`${D[id].icon} ${D[id].name} rank up: ${rank(st.lv)}!`);
+    else if(Math.floor(st.lv/25)>Math.floor(before/25))toast(`${D[id].icon} ${D[id].name} Lv ${st.lv}: payout ×2!`);
+  }
+}
+function tick(dt){
+  for(const sl of S.slots){
+    if(!sl.s)continue;
+    const st=S.skills[sl.s],T=cycleTime(sl.s);
+    if(sl.p>=T&&!st.coach)continue;
+    sl.p+=dt;
+    if(sl.p>=T){
+      if(st.coach){const n=Math.floor(sl.p/T);sl.p-=n*T;award(sl.s,n)}
+      else sl.p=T;
+    }
+  }
+}
+let offline=false;
+function advance(sec){
+  if(sec<=2){tick(sec);return}
+  sec=Math.min(sec,OFFLINE_CAP);
+  const c0=S.coins;offline=true;
+  const steps=200;for(let i=0;i<steps;i++)tick(sec/steps);
+  offline=false;
+  const got=S.coins-c0;
+  if(sec>30)toast(`Away ${fmtT(sec)} — earned 🪙 ${fmt(got)}`);
+  renderAll();
+}
+
+// ---- actions ----
+const act={
+  assign(i,id){S.slots[i]={s:id||null,p:0};renderSlots()},
+  clear(i){S.slots[i]={s:null,p:0};renderSlots()},
+  collect(i){const sl=S.slots[i];if(sl.s&&sl.p>=cycleTime(sl.s)){award(sl.s,1);sl.p=0}},
+  cram(i){const sl=S.slots[i];if(!sl.s)return;const T=cycleTime(sl.s);
+    if(sl.p>=T){if(!S.skills[sl.s].coach)act.collect(i);return}
+    sl.p=Math.min(T,sl.p+.3+.3*S.upg.hustle);if(S.skills[sl.s].coach)tick(0)},
+  buySlot(){const c=slotCost();if(S.slots.length<MAX_SLOTS&&S.coins>=c){S.coins-=c;S.slots.push({s:null,p:0});renderSlots()}},
+  unlock(id){const c=D[id].cost;if(S.coins>=c&&!S.skills[id].u){S.coins-=c;S.skills[id].u=true;toast(`Unlocked ${D[id].icon} ${D[id].name}!`);renderAll()}},
+  coach(id){const c=coachCost(id);if(S.coins>=c&&!S.skills[id].coach){S.coins-=c;S.skills[id].coach=true;toast(`Hired a ${D[id].name} coach — it trains on autopilot`);renderAll()}},
+  upg(id){const u=UPGRADES.find(x=>x.id===id),c=upgCost(u);if(S.coins>=c){S.coins-=c;S.upg[id]++;renderUpgrades()}},
+  prestige(){const g=wisdomGain();if(g<1)return;
+    if(!confirm(`Master your craft? You reset coins, skills, slots and upgrades, and gain ${g} Wisdom.`))return;
+    S=fresh({lifetime:S.lifetime,wisdom:S.wisdom+g,prestiges:S.prestiges+1});save();toast(`🦉 +${g} Wisdom`);renderAll()},
+  hardReset(){if(confirm('Delete ALL progress, including Wisdom?')){S=fresh();save();renderAll()}},
+};
+
+// ---- rendering ----
+const $=id=>document.getElementById(id);
+const U={slots:[],skills:[],upgrades:[],mastery:[]};
+function h(tag,props={},...kids){const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(props)){if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k==='class')e.className=v;else if(k in e)e[k]=v;else e.setAttribute(k,v)}
+  for(const k of kids.flat())if(k!=null)e.append(k);return e}
+function live(sec,el,fn){U[sec].push(()=>fn(el));return el}
+
+function renderSlots(){
+  const box=$('slots');box.replaceChildren();U.slots=[];
+  S.slots.forEach((sl,i)=>{
+    if(!sl.s){
+      const sel=h('select',{onchange:e=>act.assign(i,e.target.value)},h('option',{value:''},'— Choose a skill —'),
+        SKILLS.filter(d=>S.skills[d.id].u).map(d=>h('option',{value:d.id},`${d.icon} ${d.name}`)));
+      box.append(h('div',{class:'card slot'},h('div',{class:'muted'},`Slot ${i+1} · empty`),sel));
+      return;
+    }
+    const d=D[sl.s],st=S.skills[sl.s];
+    const fill=h('i'),bar=live('slots',h('div',{class:'bar',onclick:()=>act.cram(i)},fill),b=>{
+      const T=cycleTime(sl.s);fill.style.width=Math.min(100,S.slots[i].p/T*100)+'%';b.classList.toggle('done',!st.coach&&S.slots[i].p>=T)});
+    const lv=live('slots',h('span',{class:'badge'}),e=>e.textContent='Lv '+st.lv);
+    const status=live('slots',h('span',{class:'muted'}),e=>{const T=cycleTime(sl.s),p=S.slots[i].p;
+      e.textContent=`+${fmt(payout(sl.s))} · ${st.coach?fmtT(T)+' auto':p>=T?'Ready!':fmtT(T-p)}`});
+    const col=live('slots',h('button',{class:'go',onclick:()=>act.collect(i)},'Collect'),e=>e.hidden=st.coach||S.slots[i].p<cycleTime(sl.s));
+    box.append(h('div',{class:'card slot'},
+      h('div',{class:'top'},h('span',{class:'icon'},d.icon),h('div',{},h('div',{class:'name'},d.name),lv,st.coach?h('span',{class:'badge c'},'coached'):null),
+        h('button',{class:'x',title:'Remove',onclick:()=>act.clear(i)},'✕')),
+      bar,h('div',{class:'row'},status,col)));
+  });
+  if(S.slots.length<MAX_SLOTS){
+    const btn=live('slots',h('button',{class:'primary',onclick:act.buySlot}),e=>{e.textContent=`🪙 ${fmt(slotCost())}`;e.disabled=S.coins<slotCost()});
+    box.append(h('div',{class:'card slot buy'},h('div',{},'➕ New training slot'),btn));
+  }
+}
+
+function renderSkills(){
+  const box=$('skills');box.replaceChildren();U.skills=[];
+  const firstLocked=SKILLS.findIndex(d=>!S.skills[d.id].u);
+  SKILLS.forEach((d,idx)=>{
+    const st=S.skills[d.id];
+    if(!st.u){
+      if(firstLocked>=0&&idx>firstLocked+1)return;
+      const btn=live('skills',h('button',{class:'primary',onclick:()=>act.unlock(d.id)},`Unlock 🪙 ${fmt(d.cost)}`),e=>e.disabled=S.coins<d.cost);
+      box.append(h('div',{class:'card item locked'},h('span',{class:'icon'},d.icon),
+        h('div',{class:'grow'},h('div',{class:'name'},d.name),h('div',{class:'muted'},`Base: 🪙 ${fmt(d.pay)} every ${fmtT(d.time)}`)),btn));
+      return;
+    }
+    const fill=h('i');
+    const head=live('skills',h('div',{class:'name'}),e=>e.textContent=`${d.name} — Lv ${st.lv} ${rank(st.lv)}`);
+    const xpb=live('skills',h('div',{class:'bar xp'},fill),()=>fill.style.width=Math.min(100,st.xp/xpNeed(st.lv)*100)+'%');
+    const info=live('skills',h('div',{class:'muted'}),e=>e.textContent=
+      `🪙 ${fmt(payout(d.id))} / ${fmtT(cycleTime(d.id))} · XP ${fmt(st.xp)}/${fmt(xpNeed(st.lv))} · next ×2 at Lv ${(Math.floor(st.lv/25)+1)*25}`);
+    const right=st.coach?h('span',{class:'badge c'},'Coach ✓'):
+      live('skills',h('button',{onclick:()=>act.coach(d.id)},`Hire coach 🪙 ${fmt(coachCost(d.id))}`),e=>e.disabled=S.coins<coachCost(d.id));
+    box.append(h('div',{class:'card item'},h('span',{class:'icon'},d.icon),h('div',{class:'grow'},head,xpb,info),right));
+  });
+}
+
+function renderUpgrades(){
+  const box=$('upgrades');box.replaceChildren();U.upgrades=[];
+  UPGRADES.forEach(u=>{
+    const btn=live('upgrades',h('button',{class:'primary',onclick:()=>act.upg(u.id)}),e=>{const c=upgCost(u);e.textContent=`🪙 ${fmt(c)}`;e.disabled=S.coins<c});
+    box.append(h('div',{class:'card item'},h('span',{class:'icon'},u.icon),
+      h('div',{class:'grow'},h('div',{class:'name'},`${u.name} — Lv ${S.upg[u.id]}`),h('div',{class:'muted'},u.desc)),btn));
+  });
+}
+
+function renderMastery(){
+  const box=$('mastery');box.replaceChildren();U.mastery=[];
+  const gain=live('mastery',h('div',{class:'big'}),e=>e.textContent=`+${fmt(wisdomGain())} 🦉`);
+  const btn=live('mastery',h('button',{class:'primary',onclick:act.prestige},'Master & reset'),e=>e.disabled=wisdomGain()<1);
+  const next=live('mastery',h('div',{class:'muted'}),e=>{const t=wisdomTotal()+1;e.textContent=`Next Wisdom at 🪙 ${fmt(t*t*1e5)} lifetime earnings`});
+  box.append(
+    h('div',{class:'card'},h('h2',{},'Mastery (prestige)'),
+      h('p',{class:'muted'},'Start over with everything you learned. Each Wisdom gives +5% coins and +2% XP forever.'),
+      h('div',{},`Wisdom: ${S.wisdom} → +${S.wisdom*5}% coins, +${S.wisdom*2}% XP`),gain,next,h('p',{},btn)),
+    h('div',{class:'card',style:'margin-top:10px'},h('h2',{},'Stats'),
+      live('mastery',h('div',{}),e=>e.textContent=`Lifetime earnings: 🪙 ${fmt(S.lifetime)}`),
+      live('mastery',h('div',{}),e=>e.textContent=`This run: 🪙 ${fmt(S.runEarned)}`),
+      h('div',{},`Masteries: ${S.prestiges}`),
+      h('p',{},h('button',{onclick:act.hardReset},'Hard reset'))));
+}
+
+function renderAll(){renderSlots();renderSkills();renderUpgrades();renderMastery()}
+function update(){
+  $('coins').textContent=fmt(S.coins);$('rate').textContent=fmt(rate());$('wis').textContent=S.wisdom;
+  for(const k in U)if(k==='slots'||!$(k).hidden)U[k].forEach(f=>f());
+}
+
+// ---- utils ----
+const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+function fmt(n){if(n<1000)return n<10&&n%1?n.toFixed(1):String(Math.floor(n));
+  const e=Math.floor(Math.log10(n)/3);if(e>=SUF.length)return n.toExponential(2);
+  return (n/1000**e).toFixed(2).replace(/\.?0+$/,'')+SUF[e]}
+function fmtT(s){if(s<60)return(s<10?s.toFixed(1):Math.round(s))+'s';
+  if(s<3600)return`${Math.floor(s/60)}m ${Math.floor(s%60)}s`;return`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`}
+function toast(msg){const t=h('div',{class:'toast'},msg);$('toasts').append(t);setTimeout(()=>t.remove(),4000)}
+
+// ---- tabs & loop ----
+$('tabs').addEventListener('click',e=>{const t=e.target.dataset.tab;if(!t)return;
+  for(const b of $('tabs').children)b.classList.toggle('on',b.dataset.tab===t);
+  for(const s of['skills','upgrades','mastery'])$(s).hidden=s!==t;
+  ({skills:renderSkills,upgrades:renderUpgrades,mastery:renderMastery})[t]()});
+
+renderAll();
+advance((Date.now()-S.last)/1000);S.last=Date.now();
+function loop(){const now=Date.now();advance((now-S.last)/1000);S.last=now;update();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+setInterval(save,5000);
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('beforeunload',save);
+</script>
+</body>
+</html>

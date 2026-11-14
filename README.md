@@ -68,3 +68,6 @@ Free Code Camp- App coding
     <button type="submit">Submit</button>
   </form>
 </div>
+
+## Skill Grind (idle game)
+Open `skill-idle/index.html` in a browser. Train skills in slots, earn coins, level skills, hire coaches to automate, buy upgrades, and prestige for Wisdom.
