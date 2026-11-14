@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Skill Academy</title>
 <style>
-:root{--bg:#0f1220;--panel:#181c30;--panel2:#20253d;--text:#e8eaf6;--muted:#9aa0c3;--accent:#7c5cff;--good:#3ddc97;--warn:#ffb547;--bad:#ff5c7a;--border:#2c3254}
+:root{color-scheme:dark;--bg:#0f1220;--panel:#181c30;--panel2:#20253d;--text:#e8eaf6;--muted:#9aa0c3;--accent:#7c5cff;--good:#3ddc97;--warn:#ffb547;--bad:#ff5c7a;--border:#2c3254}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline}
 header h1{font-size:18px;margin:0 auto 0 0}
 .stat b{font-size:18px}.stat small{color:var(--muted);margin-left:4px}
 .wrap{max-width:1000px;margin:0 auto;padding:12px 16px 80px}
@@ -194,10 +194,10 @@ const act={
   sellAll(){let v=0;for(const d of SKILLS)v+=sell(d.id,S.inv[d.id]);if(v)toast(`Sold everything for 🪙 ${fmt(v)}`)},
   fulfill(i){const c=S.contracts[i];if(c&&S.inv[c.id]>=c.qty){S.inv[c.id]-=c.qty;earn(c.reward);S.contracts.splice(i,1);
     toast(`✅ ${c.who} paid 🪙 ${fmt(c.reward)}`);renderContracts()}},
-  prestige(){const g=wisdomGain();if(g<1)return;
-    if(!confirm(`Graduate? Coins, students, skills, stock and advancements reset. You gain ${g} Wisdom.`))return;
+  prestige(e){const g=wisdomGain();if(g<1)return;
+    if(!armed(e,`Tap again: reset run for +${g} 🦉`))return;
     S=fresh({lifetime:S.lifetime,wisdom:S.wisdom+g,prestiges:S.prestiges+1});syncSeats();save();toast(`🦉 +${g} Wisdom`);renderAll()},
-  hardReset(){if(confirm('Delete ALL progress, including Wisdom?')){S=fresh();syncSeats();save();renderAll()}},
+  hardReset(e){if(armed(e,'Tap again to delete ALL progress')){S=fresh();syncSeats();save();renderAll()}},
 };
 
 // ===== canvas room =====
@@ -366,6 +366,8 @@ const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
 function fmt(n){if(n<1000)return n<100&&n%1?(+n.toFixed(1)).toString():String(Math.floor(n));
   const e=Math.floor(Math.log10(n)/3);if(e>=SUF.length)return n.toExponential(2);return(n/1000**e).toFixed(2).replace(/\.?0+$/,'')+SUF[e]}
 function fmtT(s){if(s<60)return(s<10?s.toFixed(1):Math.round(s))+'s';if(s<3600)return`${Math.floor(s/60)}m ${Math.floor(s%60)}s`;return`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`}
+function armed(e,msg){const b=e.currentTarget;if(b.dataset.armed)return true;b.dataset.armed=1;const t=b.textContent;b.textContent=msg;
+  setTimeout(()=>{delete b.dataset.armed;b.textContent=t},4000);return false}
 function toast(m){const t=h('div',{class:'toast'},m);$('toasts').append(t);setTimeout(()=>t.remove(),4000)}
 
 // ===== boot =====
