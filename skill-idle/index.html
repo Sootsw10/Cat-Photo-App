@@ -3,45 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Skill Grind</title>
+<title>Skill Academy</title>
 <style>
 :root{--bg:#0f1220;--panel:#181c30;--panel2:#20253d;--text:#e8eaf6;--muted:#9aa0c3;--accent:#7c5cff;--good:#3ddc97;--warn:#ffb547;--bad:#ff5c7a;--border:#2c3254}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline}
 header h1{font-size:18px;margin:0 auto 0 0}
 .stat b{font-size:18px}.stat small{color:var(--muted);margin-left:4px}
-.wrap{max-width:1000px;margin:0 auto;padding:16px}
-h2{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
-.slot{min-height:118px;display:flex;flex-direction:column;gap:6px}
-.slot .top{display:flex;align-items:center;gap:8px}
-.icon{font-size:26px;line-height:1}
-.name{font-weight:600}
-.muted{color:var(--muted);font-size:13px}
-.bar{height:16px;background:var(--panel2);border-radius:8px;overflow:hidden;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#a78bff);border-radius:8px}
-.bar.done>i{background:var(--good)}
-.bar.xp{height:8px;cursor:default}.bar.xp>i{background:var(--warn)}
-.row{display:flex;align-items:center;gap:6px;justify-content:space-between}
-button,select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+.wrap{max-width:1000px;margin:0 auto;padding:12px 16px 80px}
+#room{display:block;width:100%;border-radius:12px;border:1px solid var(--border);touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
+.hint{color:var(--muted);font-size:13px;margin:6px 2px}
+#tool{display:flex;gap:6px;overflow-x:auto;padding:4px 0 2px}
+.chip{flex:none;display:flex;flex-direction:column;align-items:center;min-width:76px;padding:6px 8px}
+.chip .i{font-size:22px;line-height:1.1}.chip small{color:var(--muted);font-size:11px}
+.chip.on{border-color:var(--accent);background:#2a2350;box-shadow:0 0 0 1px var(--accent) inset}
+.chip.poor small{color:var(--bad)}
+button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
 button.primary{background:var(--accent);border-color:var(--accent)}
 button.go{background:var(--good);border-color:var(--good);color:#0b2a1c;font-weight:600}
 button:disabled{opacity:.4;cursor:not-allowed}
-button.x{padding:2px 8px;margin-left:auto}
-select{width:100%}
-.buy{border-style:dashed;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center}
-nav{display:flex;gap:6px;margin:18px 0 10px;flex-wrap:wrap}
+nav{display:flex;gap:6px;margin:16px 0 10px;flex-wrap:wrap}
 nav button.on{background:var(--accent);border-color:var(--accent)}
+.badge{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--bad);color:#fff;margin-left:4px}
 .list{display:flex;flex-direction:column;gap:8px}
-.item{display:flex;align-items:center;gap:10px}
-.item .grow{flex:1;min-width:0}
-.badge{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--panel2);color:var(--muted);margin-left:4px}
-.badge.c{background:#173d2e;color:var(--good)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
+.item{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.item .grow{flex:1;min-width:150px}
+.icon{font-size:26px;line-height:1}
+.name{font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+.up{color:var(--good)}.down{color:var(--bad)}
+.bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:4px 0}.bar>i{display:block;height:100%;background:var(--warn)}
+.tier{margin-bottom:14px}
+.tier h3{margin:0 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.node{display:flex;flex-direction:column;gap:4px}
+.node.lock{opacity:.5}
+.node .pips{letter-spacing:2px;color:var(--warn);font-size:12px}
 .locked>.icon,.locked>.grow{opacity:.55}
-#toasts{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:10;width:min(420px,calc(100% - 32px))}
+#toasts{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:10;width:min(420px,calc(100% - 32px));pointer-events:none}
 .toast{background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:8px 12px;animation:f 4s forwards}
 @keyframes f{0%{opacity:0;transform:translateY(8px)}8%,85%{opacity:1;transform:none}100%{opacity:0}}
 .big{font-size:28px;font-weight:700}
@@ -49,241 +51,330 @@ nav button.on{background:var(--accent);border-color:var(--accent)}
 </head>
 <body>
 <header>
-  <h1>🧠 Skill Grind</h1>
+  <h1>🎓 Skill Academy</h1>
   <span class="stat">🪙 <b id="coins">0</b></span>
-  <span class="stat"><b id="rate">0</b><small>/s auto</small></span>
+  <span class="stat">📦 <b id="invv">0</b><small>stock value</small></span>
   <span class="stat">🦉 <b id="wis">0</b><small>wisdom</small></span>
 </header>
 <div class="wrap">
-  <h2>Training slots <span class="muted" style="text-transform:none;letter-spacing:0">— tap a bar to cram</span></h2>
-  <div class="grid" id="slots"></div>
+  <canvas id="room"></canvas>
+  <div class="hint">Tap an empty chair to enroll a student · tap a student to tutor them · swipe across ready students (glowing) to harvest skill points — longer swipes give a combo bonus.</div>
+  <div id="tool"></div>
   <nav id="tabs">
-    <button data-tab="skills" class="on">Skills</button>
-    <button data-tab="upgrades">Upgrades</button>
-    <button data-tab="mastery">Mastery</button>
+    <button data-tab="market" class="on">📈 Market</button>
+    <button data-tab="contracts">📜 Contracts <span id="cbadge" class="badge" hidden></span></button>
+    <button data-tab="adv">🧩 Advancement</button>
+    <button data-tab="skills">📚 Skills</button>
+    <button data-tab="mastery">🦉 Mastery</button>
   </nav>
-  <section id="skills" class="list"></section>
-  <section id="upgrades" class="list" hidden></section>
+  <section id="market" class="list"></section>
+  <section id="contracts" class="list" hidden></section>
+  <section id="adv" hidden></section>
+  <section id="skills" class="list" hidden></section>
   <section id="mastery" hidden></section>
 </div>
 <div id="toasts"></div>
 <script>
+// ===== data =====
 const SKILLS=[
-  {id:'juggle',name:'Juggling',icon:'🤹',cost:0,time:2,pay:1},
-  {id:'cook',name:'Cooking',icon:'🍳',cost:60,time:5,pay:8},
-  {id:'fit',name:'Fitness',icon:'💪',cost:700,time:10,pay:55},
-  {id:'draw',name:'Drawing',icon:'🎨',cost:8e3,time:20,pay:420},
-  {id:'music',name:'Guitar',icon:'🎸',cost:1e5,time:40,pay:3600},
-  {id:'code',name:'Coding',icon:'💻',cost:1.4e6,time:80,pay:32e3},
-  {id:'lang',name:'Languages',icon:'🗣️',cost:2e7,time:160,pay:3e5},
-  {id:'chess',name:'Chess',icon:'♟️',cost:3e8,time:320,pay:3e6},
-  {id:'martial',name:'Martial Arts',icon:'🥋',cost:5e9,time:640,pay:3.2e7},
-  {id:'astro',name:'Astrophysics',icon:'🔭',cost:8e10,time:1280,pay:3.5e8},
+  {id:'juggle',name:'Juggling',icon:'🤹',color:'#ff8a5c',unlock:0,grow:6,enroll:1,price:3},
+  {id:'cook',name:'Cooking',icon:'🍳',color:'#ffd166',unlock:150,grow:15,enroll:10,price:30},
+  {id:'fit',name:'Fitness',icon:'💪',color:'#ef476f',unlock:2500,grow:35,enroll:120,price:350},
+  {id:'draw',name:'Drawing',icon:'🎨',color:'#06d6a0',unlock:4e4,grow:80,enroll:1500,price:4500},
+  {id:'music',name:'Guitar',icon:'🎸',color:'#4cc9f0',unlock:6e5,grow:180,enroll:2e4,price:6e4},
+  {id:'code',name:'Coding',icon:'💻',color:'#9d7bff',unlock:1e7,grow:400,enroll:3e5,price:8e5},
+  {id:'lang',name:'Languages',icon:'🗣️',color:'#f78c6b',unlock:2e8,grow:900,enroll:5e6,price:1.2e7},
+  {id:'chess',name:'Chess',icon:'♟️',color:'#bdb2ff',unlock:4e9,grow:2000,enroll:8e7,price:2e8},
 ];
-const UPGRADES=[
-  {id:'focus',name:'Focus',icon:'🎯',desc:'+15% training speed',base:120,g:2.3},
-  {id:'motiv',name:'Motivation',icon:'🔥',desc:'+25% coin payout',base:250,g:2.5},
-  {id:'notes',name:'Study Notes',icon:'📓',desc:'+25% XP gained',base:400,g:2.4},
-  {id:'hustle',name:'Hustle',icon:'👆',desc:'Cramming adds +0.3s more progress',base:150,g:2.1},
+const ADV=[
+  {id:'tables',tier:0,name:'Training Tables',icon:'🪑',desc:'+1 table in the room',max:8,base:50,g:4.5},
+  {id:'seats',tier:0,name:'Longer Benches',icon:'📏',desc:'+1 chair on every table',max:4,base:150,g:9},
+  {id:'lamps',tier:1,name:'Study Lamps',icon:'💡',desc:'+20% student growth speed',max:15,base:200,g:2.6,req:['tables',1]},
+  {id:'mkt',tier:1,name:'Marketing',icon:'📣',desc:'+15% market sell price',max:20,base:300,g:2.4,req:['tables',1]},
+  {id:'scholar',tier:1,name:'Scholarships',icon:'🎓',desc:'−15% enrollment cost',max:5,base:500,g:3.5,req:['seats',1]},
+  {id:'tutor',tier:2,name:'Tutors',icon:'🧑‍🏫',desc:'Auto-harvest ready students (faster per level)',max:5,base:1500,g:5,req:['lamps',2]},
+  {id:'gifted',tier:2,name:'Gifted Program',icon:'⭐',desc:'+1 skill point per harvest',max:10,base:8000,g:6,req:['scholar',2]},
+  {id:'office',tier:3,name:'Enrollment Office',icon:'🏫',desc:'Auto re-enroll the same skill after each harvest',max:1,base:6000,g:1,req:['tutor',1]},
+  {id:'agent',tier:3,name:'Talent Agent',icon:'💼',desc:'Auto-sells your stock (smaller fee per level)',max:5,base:25000,g:6,req:['office',1]},
 ];
-const RANKS=[[0,'Novice'],[10,'Apprentice'],[25,'Adept'],[50,'Expert'],[100,'Master'],[200,'Grandmaster'],[400,'Legend']];
-const MAX_SLOTS=12, OFFLINE_CAP=8*3600, KEY='skillgrind-v1';
-const D=Object.fromEntries(SKILLS.map(s=>[s.id,s]));
+const TIERS=['Tier I — Facilities','Tier II — Quality','Tier III — Staff','Tier IV — Automation'];
+const TUTOR_IV=[8,4,2,1,.5];
+const RANKS=[[0,'Novice'],[10,'Apprentice'],[25,'Adept'],[50,'Expert'],[100,'Master'],[200,'Grandmaster']];
+const D=Object.fromEntries(SKILLS.map(s=>[s.id,s])),A=Object.fromEntries(ADV.map(a=>[a.id,a]));
+const KEY='skillacademy-v1',OFFLINE_CAP=8*3600;
 
-function fresh(keep={}){
-  return {coins:0,runEarned:0,lifetime:keep.lifetime||0,wisdom:keep.wisdom||0,prestiges:keep.prestiges||0,
-    slots:[{s:null,p:0}],
-    skills:Object.fromEntries(SKILLS.map((d,i)=>[d.id,{u:i===0,lv:0,xp:0,coach:false}])),
-    upg:Object.fromEntries(UPGRADES.map(u=>[u.id,0])),last:Date.now()};
+function fresh(k={}){
+  return {coins:15,runEarned:0,lifetime:k.lifetime||0,wisdom:k.wisdom||0,prestiges:k.prestiges||0,sel:'juggle',
+    tables:[],skills:Object.fromEntries(SKILLS.map((d,i)=>[d.id,{u:i===0,lv:0,xp:0}])),
+    inv:Object.fromEntries(SKILLS.map(d=>[d.id,0])),dem:Object.fromEntries(SKILLS.map(d=>[d.id,1])),
+    trend:Object.fromEntries(SKILLS.map(d=>[d.id,0])),
+    adv:Object.fromEntries(ADV.map(a=>[a.id,0])),contracts:[],nextC:Date.now()+20e3,tt:0,at:0,mt:0,last:Date.now()};
 }
-let S=load();
-
-function load(){
-  try{const r=JSON.parse(localStorage.getItem(KEY));if(r){const f=fresh();
-    return {...f,...r,skills:{...f.skills,...r.skills},upg:{...f.upg,...r.upg}};}}catch(e){}
-  return fresh();
-}
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r){const f=fresh();
+  for(const k of['skills','inv','dem','trend','adv'])r[k]={...f[k],...r[k]};return{...f,...r}}}catch(e){}return fresh()}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load();
+function syncSeats(){const T=1+S.adv.tables,N=2+S.adv.seats;
+  while(S.tables.length<T)S.tables.push([]);for(const t of S.tables)while(t.length<N)t.push({s:null,p:0})}
+syncSeats();
 
-// ---- formulas ----
-const coinMult=()=>(1+.25*S.upg.motiv)*(1+.05*S.wisdom);
-const xpMult=()=>(1+.25*S.upg.notes)*(1+.02*S.wisdom);
-const payout=id=>{const lv=S.skills[id].lv;return D[id].pay*(1+.1*lv)*2**Math.floor(lv/25)*coinMult()};
-const cycleTime=id=>D[id].time/((1+.15*S.upg.focus)*(1+.04*S.skills[id].lv));
-const xpNeed=lv=>Math.ceil(3+2*lv**1.5);
+// ===== formulas =====
+const lvMult=id=>{const lv=S.skills[id].lv;return(1+.08*lv)*2**Math.floor(lv/25)};
+const growTime=id=>D[id].grow/((1+.2*S.adv.lamps)*(1+.02*S.skills[id].lv));
+const enrollCost=id=>D[id].enroll*(1-.15*S.adv.scholar);
+const yieldOf=id=>1+Math.floor(S.skills[id].lv/5)+S.adv.gifted;
+const basePrice=id=>D[id].price*lvMult(id)*(1+.15*S.adv.mkt)*(1+.05*S.wisdom);
+const price=id=>basePrice(id)*S.dem[id];
+const xpNeed=lv=>Math.ceil(5+4*lv**1.4);
 const rank=lv=>RANKS.filter(r=>lv>=r[0]).pop()[1];
-const coachCost=id=>Math.max(25,D[id].cost*3);
-const slotCost=()=>50*6**(S.slots.length-1);
-const upgCost=u=>Math.ceil(u.base*u.g**S.upg[u.id]);
+const advCost=a=>Math.ceil(a.base*a.g**S.adv[a.id]);
+const advOpen=a=>!a.req||S.adv[a.req[0]]>=a.req[1];
+const agentFee=()=>.65+.07*S.adv.agent;
+const invValue=()=>SKILLS.reduce((t,d)=>t+S.inv[d.id]*price(d.id),0);
 const wisdomTotal=()=>Math.floor(Math.sqrt(S.lifetime/1e5));
 const wisdomGain=()=>Math.max(0,wisdomTotal()-S.wisdom);
-const rate=()=>S.slots.reduce((a,sl)=>a+(sl.s&&S.skills[sl.s].coach?payout(sl.s)/cycleTime(sl.s):0),0);
 
-// ---- core ----
+// ===== simulation =====
+let quiet=false;
 function earn(n){S.coins+=n;S.runEarned+=n;S.lifetime+=n}
-function award(id,n){
-  earn(payout(id)*n);
-  const st=S.skills[id];st.xp+=n*xpMult();
-  const before=st.lv;
+function gainXP(id,n){const st=S.skills[id],b=st.lv;st.xp+=n;
   while(st.xp>=xpNeed(st.lv)){st.xp-=xpNeed(st.lv);st.lv++}
-  if(st.lv!==before&&!offline){
-    if(rank(st.lv)!==rank(before))toast(`${D[id].icon} ${D[id].name} rank up: ${rank(st.lv)}!`);
-    else if(Math.floor(st.lv/25)>Math.floor(before/25))toast(`${D[id].icon} ${D[id].name} Lv ${st.lv}: payout ×2!`);
-  }
+  if(st.lv>b&&!quiet){
+    if(rank(st.lv)!==rank(b))toast(`${D[id].icon} ${D[id].name} reached rank ${rank(st.lv)}!`);
+    else if(Math.floor(st.lv/25)>Math.floor(b/25))toast(`${D[id].icon} ${D[id].name} Lv ${st.lv}: value ×2!`);
+    else if(Math.floor(st.lv/5)>Math.floor(b/5))toast(`${D[id].icon} ${D[id].name} Lv ${st.lv}: +1 point per harvest`);
+    dirty.skills=1}}
+function harvest(seat,combo=1,x,y){
+  const id=seat.s,n=yieldOf(id)*Math.min(2,1+.1*(combo-1));
+  S.inv[id]+=n;gainXP(id,n);
+  if(!quiet&&x!=null)fx(x,y,`+${fmt(n)} ${D[id].icon}`,D[id].color);
+  const c=enrollCost(id);
+  if(S.adv.office&&S.coins>=c){S.coins-=c;seat.p=0}else{seat.s=null;seat.p=0}
 }
-function tick(dt){
-  for(const sl of S.slots){
-    if(!sl.s)continue;
-    const st=S.skills[sl.s],T=cycleTime(sl.s);
-    if(sl.p>=T&&!st.coach)continue;
-    sl.p+=dt;
-    if(sl.p>=T){
-      if(st.coach){const n=Math.floor(sl.p/T);sl.p-=n*T;award(sl.s,n)}
-      else sl.p=T;
-    }
-  }
+function sell(id,n,fee=1){n=Math.min(n,S.inv[id]);if(n<=0)return 0;
+  const v=n*price(id)*fee;S.inv[id]-=n;earn(v);S.dem[id]=Math.max(.5,S.dem[id]-.02);return v}
+function step(dt){
+  for(const t of S.tables)for(const seat of t)if(seat.s&&seat.p<1)seat.p=Math.min(1,seat.p+dt/growTime(seat.s));
+  if(S.adv.tutor){S.tt+=dt;const iv=TUTOR_IV[S.adv.tutor-1];
+    if(S.tt>=iv){S.tt=0;S.tables.forEach((t,ti)=>t.forEach((seat,si)=>{if(seat.s&&seat.p>=1){const p=seatPos(ti,si);harvest(seat,1,p&&p.x,p&&p.y)}}))}}
+  if(S.adv.agent){S.at+=dt;if(S.at>=3){S.at=0;for(const d of SKILLS)if(S.inv[d.id]>0)sell(d.id,S.inv[d.id],agentFee())}}
+  S.mt+=dt;if(S.mt>=4){S.mt=0;for(const d of SKILLS){const o=S.dem[d.id];
+    S.dem[d.id]=Math.min(1.6,Math.max(.5,o+(1-o)*.1+(Math.random()-.5)*.12));S.trend[d.id]=S.dem[d.id]-o}}
+  if(!quiet)contractsTick();
 }
-let offline=false;
 function advance(sec){
-  if(sec<=2){tick(sec);return}
-  sec=Math.min(sec,OFFLINE_CAP);
-  const c0=S.coins;offline=true;
-  const steps=200;for(let i=0;i<steps;i++)tick(sec/steps);
-  offline=false;
-  const got=S.coins-c0;
-  if(sec>30)toast(`Away ${fmtT(sec)} — earned 🪙 ${fmt(got)}`);
+  if(sec<=2){step(sec);return}
+  sec=Math.min(sec,OFFLINE_CAP);const c0=S.coins,i0=invValue();quiet=true;
+  const n=Math.ceil(sec);for(let i=0;i<n;i++)step(sec/n);quiet=false;
+  if(sec>30)toast(`Away ${fmtT(sec)} — earned 🪙 ${fmt(Math.max(0,S.coins-c0))}, stock value now 🪙 ${fmt(invValue())}`);
   renderAll();
 }
 
-// ---- actions ----
+// ===== contracts =====
+const CLIENTS=['Local café','Summer camp','Startup','Talent show','Gym chain','Film studio','Museum','Tech giant','Embassy','World tour'];
+function contractsTick(){
+  const now=Date.now(),before=S.contracts.length;
+  S.contracts=S.contracts.filter(c=>c.exp>now);
+  if(now>=S.nextC){S.nextC=now+30e3+Math.random()*30e3;
+    const un=SKILLS.filter(d=>S.skills[d.id].u);
+    if(S.contracts.length<3){const d=un[Math.floor(Math.random()*un.length)];
+      const qty=Math.ceil((5+Math.random()*20)*yieldOf(d.id));
+      S.contracts.push({id:d.id,qty,reward:Math.ceil(qty*basePrice(d.id)*(2+Math.random())),exp:now+180e3,
+        who:CLIENTS[Math.min(CLIENTS.length-1,SKILLS.indexOf(d)+Math.floor(Math.random()*3))]});
+      toast(`📜 New contract: ${qty} ${d.icon} ${d.name}`)}}
+  if(S.contracts.length!==before)dirty.contracts=1;
+}
+
+// ===== actions =====
 const act={
-  assign(i,id){S.slots[i]={s:id||null,p:0};renderSlots()},
-  clear(i){S.slots[i]={s:null,p:0};renderSlots()},
-  collect(i){const sl=S.slots[i];if(sl.s&&sl.p>=cycleTime(sl.s)){award(sl.s,1);sl.p=0}},
-  cram(i){const sl=S.slots[i];if(!sl.s)return;const T=cycleTime(sl.s);
-    if(sl.p>=T){if(!S.skills[sl.s].coach)act.collect(i);return}
-    sl.p=Math.min(T,sl.p+.3+.3*S.upg.hustle);if(S.skills[sl.s].coach)tick(0)},
-  buySlot(){const c=slotCost();if(S.slots.length<MAX_SLOTS&&S.coins>=c){S.coins-=c;S.slots.push({s:null,p:0});renderSlots()}},
-  unlock(id){const c=D[id].cost;if(S.coins>=c&&!S.skills[id].u){S.coins-=c;S.skills[id].u=true;toast(`Unlocked ${D[id].icon} ${D[id].name}!`);renderAll()}},
-  coach(id){const c=coachCost(id);if(S.coins>=c&&!S.skills[id].coach){S.coins-=c;S.skills[id].coach=true;toast(`Hired a ${D[id].name} coach — it trains on autopilot`);renderAll()}},
-  upg(id){const u=UPGRADES.find(x=>x.id===id),c=upgCost(u);if(S.coins>=c){S.coins-=c;S.upg[id]++;renderUpgrades()}},
+  select(id){S.sel=id;renderTool()},
+  unlock(id){const c=D[id].unlock;if(S.coins>=c&&!S.skills[id].u){S.coins-=c;S.skills[id].u=true;S.sel=id;toast(`Unlocked ${D[id].icon} ${D[id].name}!`);renderAll()}},
+  adv(id){const a=A[id],c=advCost(a);if(advOpen(a)&&S.adv[id]<a.max&&S.coins>=c){S.coins-=c;S.adv[id]++;syncSeats();renderAll()}},
+  sell(id,all){const v=sell(id,all?S.inv[id]:Math.min(S.inv[id],Math.max(1,yieldOf(id))));if(v)fx(null,null,`+🪙 ${fmt(v)}`)},
+  sellAll(){let v=0;for(const d of SKILLS)v+=sell(d.id,S.inv[d.id]);if(v)toast(`Sold everything for 🪙 ${fmt(v)}`)},
+  fulfill(i){const c=S.contracts[i];if(c&&S.inv[c.id]>=c.qty){S.inv[c.id]-=c.qty;earn(c.reward);S.contracts.splice(i,1);
+    toast(`✅ ${c.who} paid 🪙 ${fmt(c.reward)}`);renderContracts()}},
   prestige(){const g=wisdomGain();if(g<1)return;
-    if(!confirm(`Master your craft? You reset coins, skills, slots and upgrades, and gain ${g} Wisdom.`))return;
-    S=fresh({lifetime:S.lifetime,wisdom:S.wisdom+g,prestiges:S.prestiges+1});save();toast(`🦉 +${g} Wisdom`);renderAll()},
-  hardReset(){if(confirm('Delete ALL progress, including Wisdom?')){S=fresh();save();renderAll()}},
+    if(!confirm(`Graduate? Coins, students, skills, stock and advancements reset. You gain ${g} Wisdom.`))return;
+    S=fresh({lifetime:S.lifetime,wisdom:S.wisdom+g,prestiges:S.prestiges+1});syncSeats();save();toast(`🦉 +${g} Wisdom`);renderAll()},
+  hardReset(){if(confirm('Delete ALL progress, including Wisdom?')){S=fresh();syncSeats();save();renderAll()}},
 };
 
-// ---- rendering ----
+// ===== canvas room =====
+const cv=document.getElementById('room'),ctx=cv.getContext('2d');
+let L={W:0,H:0,tables:[],seats:[]},time=0;const P=[];
+const WALL=70,ROW=156,PAD=12,GAP=12;
+function layout(){
+  const W=cv.clientWidth||cv.parentElement.clientWidth,cols=W>=700?2:1;
+  const nT=S.tables.length,lockSlot=S.adv.tables<A.tables.max?1:0,n=nT+lockSlot,rows=Math.ceil(n/cols);
+  const H=WALL+rows*ROW+PAD,dpr=devicePixelRatio||1;
+  if(L.W!==W||L.H!==H||L.dpr!==dpr){cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';L.W=W;L.H=H;L.dpr=dpr}
+  const tw=(W-PAD*2-GAP*(cols-1))/cols;L.tables=[];L.seats=[];
+  for(let i=0;i<n;i++){const x=PAD+(i%cols)*(tw+GAP),y=WALL+Math.floor(i/cols)*ROW;L.tables.push({x,y,w:tw,locked:i>=nT});
+    if(i<nT){const N=S.tables[i].length,sw=tw/N;for(let j=0;j<N;j++)L.seats.push({t:i,j,x:x+sw*j,y,w:sw,h:ROW-10,cx:x+sw*(j+.5),base:y+100})}}
+}
+function seatPos(t,j){const s=L.seats.find(s=>s.t===t&&s.j===j);return s&&{x:s.cx,y:s.base-70}}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function draw(dt){
+  layout();time+=dt;const{W,H,dpr}=L;ctx.setTransform(dpr,0,0,dpr,0,0);
+  // floor & wall
+  ctx.fillStyle='#1b2033';ctx.fillRect(0,0,W,H);
+  for(let y=WALL,r=0;y<H;y+=32,r++)for(let x=(r%2)*32;x<W;x+=64){ctx.fillStyle='#1f253b';ctx.fillRect(x,y,32,32)}
+  ctx.fillStyle='#2b3150';ctx.fillRect(0,0,W,WALL);ctx.fillStyle='#3a4168';ctx.fillRect(0,WALL-6,W,6);
+  const bw=Math.min(340,W-120);ctx.fillStyle='#7a5230';rr(W/2-bw/2-5,9,bw+10,48,6);ctx.fill();
+  ctx.fillStyle='#1f3b2e';ctx.fillRect(W/2-bw/2,14,bw,38);
+  ctx.fillStyle='#e9f5e1';ctx.font='bold 17px "Comic Sans MS",cursive,system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(S.prestiges?`SKILL ACADEMY · Class of ${S.prestiges+1}`:'SKILL ACADEMY',W/2,33);
+  if(W>500){for(const wx of[24,W-84]){ctx.fillStyle='#4a6fa5';rr(wx,12,60,40,4);ctx.fill();ctx.fillStyle='#9cc3f0';ctx.fillRect(wx+4,16,24,32);ctx.fillRect(wx+32,16,24,32)}}
+  // tables
+  for(const T of L.tables){
+    if(T.locked){ctx.setLineDash([6,6]);ctx.strokeStyle='#4a5180';ctx.lineWidth=2;rr(T.x+4,T.y+60,T.w-8,60,8);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#8a90b8';ctx.font='14px system-ui';ctx.fillText(`🔒 New table — 🪙 ${fmt(advCost(A.tables))} in Advancement`,T.x+T.w/2,T.y+90);continue}
+  }
+  for(const s of L.seats)drawSeat(s);
+  for(const T of L.tables){if(T.locked)continue;const ty=T.y+100;
+    ctx.fillStyle='#5a3a1c';ctx.fillRect(T.x+14,ty+20,7,26);ctx.fillRect(T.x+T.w-21,ty+20,7,26);
+    ctx.fillStyle='#9a6634';rr(T.x+4,ty,T.w-8,16,4);ctx.fill();ctx.fillStyle='#6d4520';ctx.fillRect(T.x+4,ty+14,T.w-8,9)}
+  for(const s of L.seats){const seat=S.tables[s.t][s.j];if(!seat.s)continue;const c=D[seat.s].color;
+    if(seat.p>.33){ctx.fillStyle=c;ctx.fillRect(s.cx-12,s.base-5,20,5)}
+    if(seat.p>.66){ctx.fillStyle='#e8eaf6';ctx.fillRect(s.cx-9,s.base-9,16,4)}}
+  // particles
+  for(let i=P.length-1;i>=0;i--){const p=P[i];p.t+=dt;p.y-=dt*35;if(p.t>1.2){P.splice(i,1);continue}
+    ctx.globalAlpha=Math.max(0,1-p.t/1.2);ctx.fillStyle=p.c;ctx.font='bold 15px system-ui';ctx.fillText(p.txt,p.x,p.y);ctx.globalAlpha=1}
+}
+function drawSeat(s){
+  const seat=S.tables[s.t][s.j],cx=s.cx,b=s.base;
+  // chair back
+  ctx.fillStyle='#3b405f';rr(cx-14,b-34,28,30,5);ctx.fill();
+  if(!seat.s){if(S.skills[S.sel]?.u){ctx.globalAlpha=.35+.15*Math.sin(time*3);ctx.font='18px system-ui';ctx.fillStyle='#fff';ctx.fillText('+',cx,b-19);ctx.globalAlpha=1}return}
+  const d=D[seat.s],p=seat.p,sc=.6+.4*Math.min(1,p),ready=p>=1,bob=ready?Math.sin(time*4+cx)*2:0;
+  const bodyTop=b-38*sc+bob,headY=bodyTop-11*sc;
+  if(ready){const g=ctx.createRadialGradient(cx,headY,2,cx,headY,40);g.addColorStop(0,d.color+'aa');g.addColorStop(1,d.color+'00');ctx.fillStyle=g;ctx.fillRect(cx-40,headY-40,80,80)}
+  ctx.fillStyle=d.color;rr(cx-12*sc,bodyTop,24*sc,40*sc,7*sc);ctx.fill();
+  ctx.fillStyle='#f1c6a0';ctx.beginPath();ctx.arc(cx,headY,11*sc,0,7);ctx.fill();
+  ctx.fillStyle='#3b2a20';ctx.beginPath();ctx.arc(cx,headY-2*sc,11*sc,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+  ctx.fillStyle='#222';const ey=headY+1*sc;ctx.fillRect(cx-4*sc,ey,2*sc,2.5*sc);ctx.fillRect(cx+2*sc,ey,2*sc,2.5*sc);
+  if(ready){ctx.strokeStyle='#222';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cx,headY+4*sc,3*sc,.2,Math.PI-.2);ctx.stroke()}
+  const ay=headY-11*sc-16;
+  if(ready){ctx.font='22px system-ui';ctx.fillText(d.icon,cx,ay+bob*2);
+    for(let k=0;k<3;k++){const a=time*2+k*2.1+cx;ctx.fillStyle='#fff8';ctx.fillRect(cx+Math.cos(a)*22,ay+Math.sin(a)*14,2,2)}}
+  else{ctx.lineWidth=3;ctx.strokeStyle='#ffffff22';ctx.beginPath();ctx.arc(cx,ay,10,0,7);ctx.stroke();
+    ctx.strokeStyle=d.color;ctx.beginPath();ctx.arc(cx,ay,10,-Math.PI/2,-Math.PI/2+p*Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.7;ctx.font='10px system-ui';ctx.fillText(d.icon,cx,ay+1);ctx.globalAlpha=1}
+}
+function fx(x,y,txt,c='#ffd166'){if(x==null){x=L.W/2;y=WALL+20}P.push({x,y,txt,c,t:0})}
+
+// pointer: tap/swipe
+let drag=null;
+function pt(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+function hitSeat(x,y){return L.seats.find(s=>x>=s.x&&x<s.x+s.w&&y>=s.y&&y<s.y+s.h)}
+function touch(x,y){
+  const s=hitSeat(x,y);if(!s)return;const key=s.t+':'+s.j;if(drag.seen.has(key))return;drag.seen.add(key);
+  const seat=S.tables[s.t][s.j];
+  if(!seat.s){const id=S.sel,c=enrollCost(id);
+    if(S.skills[id].u&&S.coins>=c){S.coins-=c;seat.s=id;seat.p=0}else if(!drag.warned){drag.warned=1;fx(s.cx,s.base-40,'Not enough 🪙','#ff5c7a')}}
+  else if(seat.p>=1){drag.combo++;harvest(seat,drag.combo,s.cx,s.base-70)}
+  else{seat.p=Math.min(1,seat.p+.05);fx(s.cx,s.base-60,'📖','#fff')}
+}
+cv.addEventListener('pointerdown',e=>{drag={seen:new Set,combo:0};touch(...pt(e))});
+cv.addEventListener('pointermove',e=>{if(drag)touch(...pt(e))});
+const endDrag=()=>{if(drag&&drag.combo>=4)toast(`🔥 Combo ×${drag.combo}! +${Math.round(Math.min(100,10*(drag.combo-1)))}% points`);drag=null};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);cv.addEventListener('pointerleave',endDrag);
+
+// ===== DOM panels =====
 const $=id=>document.getElementById(id);
-const U={slots:[],skills:[],upgrades:[],mastery:[]};
+const U={tool:[],market:[],contracts:[],adv:[],skills:[],mastery:[]},dirty={};
 function h(tag,props={},...kids){const e=document.createElement(tag);
   for(const[k,v]of Object.entries(props)){if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k==='class')e.className=v;else if(k in e)e[k]=v;else e.setAttribute(k,v)}
-  for(const k of kids.flat())if(k!=null)e.append(k);return e}
+  for(const k of kids.flat())if(k!=null&&k!==false)e.append(k);return e}
 function live(sec,el,fn){U[sec].push(()=>fn(el));return el}
 
-function renderSlots(){
-  const box=$('slots');box.replaceChildren();U.slots=[];
-  S.slots.forEach((sl,i)=>{
-    if(!sl.s){
-      const sel=h('select',{onchange:e=>act.assign(i,e.target.value)},h('option',{value:''},'— Choose a skill —'),
-        SKILLS.filter(d=>S.skills[d.id].u).map(d=>h('option',{value:d.id},`${d.icon} ${d.name}`)));
-      box.append(h('div',{class:'card slot'},h('div',{class:'muted'},`Slot ${i+1} · empty`),sel));
-      return;
-    }
-    const d=D[sl.s],st=S.skills[sl.s];
-    const fill=h('i'),bar=live('slots',h('div',{class:'bar',onclick:()=>act.cram(i)},fill),b=>{
-      const T=cycleTime(sl.s);fill.style.width=Math.min(100,S.slots[i].p/T*100)+'%';b.classList.toggle('done',!st.coach&&S.slots[i].p>=T)});
-    const lv=live('slots',h('span',{class:'badge'}),e=>e.textContent='Lv '+st.lv);
-    const status=live('slots',h('span',{class:'muted'}),e=>{const T=cycleTime(sl.s),p=S.slots[i].p;
-      e.textContent=`+${fmt(payout(sl.s))} · ${st.coach?fmtT(T)+' auto':p>=T?'Ready!':fmtT(T-p)}`});
-    const col=live('slots',h('button',{class:'go',onclick:()=>act.collect(i)},'Collect'),e=>e.hidden=st.coach||S.slots[i].p<cycleTime(sl.s));
-    box.append(h('div',{class:'card slot'},
-      h('div',{class:'top'},h('span',{class:'icon'},d.icon),h('div',{},h('div',{class:'name'},d.name),lv,st.coach?h('span',{class:'badge c'},'coached'):null),
-        h('button',{class:'x',title:'Remove',onclick:()=>act.clear(i)},'✕')),
-      bar,h('div',{class:'row'},status,col)));
-  });
-  if(S.slots.length<MAX_SLOTS){
-    const btn=live('slots',h('button',{class:'primary',onclick:act.buySlot}),e=>{e.textContent=`🪙 ${fmt(slotCost())}`;e.disabled=S.coins<slotCost()});
-    box.append(h('div',{class:'card slot buy'},h('div',{},'➕ New training slot'),btn));
-  }
-}
+function renderTool(){const box=$('tool');box.replaceChildren();U.tool=[];
+  for(const d of SKILLS){if(!S.skills[d.id].u)continue;
+    box.append(live('tool',h('button',{class:'chip'+(S.sel===d.id?' on':''),onclick:()=>act.select(d.id),title:`Enroll ${d.name} students`},
+      h('span',{class:'i'},d.icon),h('span',{},d.name),h('small',{})),e=>{const c=enrollCost(d.id);e.lastChild.textContent=`enroll 🪙 ${fmt(c)}`;e.classList.toggle('poor',S.coins<c)}))}}
 
-function renderSkills(){
-  const box=$('skills');box.replaceChildren();U.skills=[];
-  const firstLocked=SKILLS.findIndex(d=>!S.skills[d.id].u);
-  SKILLS.forEach((d,idx)=>{
-    const st=S.skills[d.id];
-    if(!st.u){
-      if(firstLocked>=0&&idx>firstLocked+1)return;
-      const btn=live('skills',h('button',{class:'primary',onclick:()=>act.unlock(d.id)},`Unlock 🪙 ${fmt(d.cost)}`),e=>e.disabled=S.coins<d.cost);
+function renderMarket(){const box=$('market');box.replaceChildren();U.market=[];
+  box.append(h('div',{class:'card item'},h('div',{class:'grow'},h('div',{class:'name'},'Sell skill points'),
+    live('market',h('div',{class:'muted'}),e=>e.textContent=S.adv.agent?`💼 Agent auto-sells every 3s at ${Math.round(agentFee()*100)}% of price.`:'Prices drift — sell when demand is high. Selling lowers demand a little.')),
+    live('market',h('button',{class:'go',onclick:act.sellAll}),e=>{const v=invValue();e.textContent=`Sell all · 🪙 ${fmt(v)}`;e.disabled=v<=0})));
+  for(const d of SKILLS){if(!S.skills[d.id].u)continue;
+    box.append(h('div',{class:'card item'},h('span',{class:'icon'},d.icon),
+      h('div',{class:'grow'},h('div',{class:'name'},d.name),
+        live('market',h('div',{class:'muted'}),e=>{const t=S.trend[d.id],dm=Math.round(S.dem[d.id]*100);
+          e.innerHTML=`Stock: <b>${fmt(S.inv[d.id])}</b> · 🪙 ${fmt(price(d.id))} each · demand <span class="${t>=0?'up':'down'}">${t>=0?'▲':'▼'} ${dm}%</span>`})),
+      live('market',h('button',{onclick:()=>act.sell(d.id,false)},'Sell 1'),e=>e.disabled=S.inv[d.id]<1),
+      live('market',h('button',{class:'primary',onclick:()=>act.sell(d.id,true)},'Sell all'),e=>e.disabled=S.inv[d.id]<=0)))}}
+
+function renderContracts(){const box=$('contracts');box.replaceChildren();U.contracts=[];dirty.contracts=0;
+  if(!S.contracts.length)box.append(h('div',{class:'card muted'},'No open contracts. Clients post new requests every 30–60s — they pay 2–3× market price.'));
+  S.contracts.forEach((c,i)=>{const d=D[c.id];
+    box.append(h('div',{class:'card item'},h('span',{class:'icon'},d.icon),
+      h('div',{class:'grow'},h('div',{class:'name'},`${c.who} wants ${fmt(c.qty)} ${d.name}`),
+        live('contracts',h('div',{class:'muted'}),e=>e.textContent=`Pays 🪙 ${fmt(c.reward)} · you have ${fmt(S.inv[c.id])} · ${fmtT(Math.max(0,(c.exp-Date.now())/1000))} left`)),
+      live('contracts',h('button',{class:'go',onclick:()=>act.fulfill(i)},'Deliver'),e=>e.disabled=S.inv[c.id]<c.qty)))})}
+
+function renderAdv(){const box=$('adv');box.replaceChildren();U.adv=[];
+  TIERS.forEach((name,ti)=>{const nodes=ADV.filter(a=>a.tier===ti);
+    box.append(h('div',{class:'tier'},h('h3',{},name),h('div',{class:'nodes'},nodes.map(a=>{
+      const open=advOpen(a),lv=S.adv[a.id],maxed=lv>=a.max;
+      const pips=a.max<=10?'●'.repeat(lv)+'○'.repeat(a.max-lv):`Lv ${lv}/${a.max}`;
+      return h('div',{class:'card node'+(open?'':' lock')},
+        h('div',{class:'name'},`${a.icon} ${a.name}`),h('div',{class:'muted'},a.desc),h('div',{class:'pips'},pips),
+        !open?h('div',{class:'muted'},`🔒 Requires ${A[a.req[0]].name} Lv ${a.req[1]}`):
+        maxed?h('div',{class:'muted'},'✅ Maxed'):
+        live('adv',h('button',{class:'primary',onclick:()=>act.adv(a.id)}),e=>{const c=advCost(a);e.textContent=`Upgrade · 🪙 ${fmt(c)}`;e.disabled=S.coins<c}))}))))})}
+
+function renderSkills(){const box=$('skills');box.replaceChildren();U.skills=[];dirty.skills=0;
+  const fl=SKILLS.findIndex(d=>!S.skills[d.id].u);
+  SKILLS.forEach((d,i)=>{const st=S.skills[d.id];
+    if(!st.u){if(fl>=0&&i>fl+1)return;
       box.append(h('div',{class:'card item locked'},h('span',{class:'icon'},d.icon),
-        h('div',{class:'grow'},h('div',{class:'name'},d.name),h('div',{class:'muted'},`Base: 🪙 ${fmt(d.pay)} every ${fmtT(d.time)}`)),btn));
-      return;
-    }
+        h('div',{class:'grow'},h('div',{class:'name'},d.name),h('div',{class:'muted'},`Grows in ${fmtT(d.grow)} · sells for 🪙 ${fmt(d.price)} · enroll 🪙 ${fmt(d.enroll)}`)),
+        live('skills',h('button',{class:'primary',onclick:()=>act.unlock(d.id)},`Unlock · 🪙 ${fmt(d.unlock)}`),e=>e.disabled=S.coins<d.unlock)));return}
     const fill=h('i');
-    const head=live('skills',h('div',{class:'name'}),e=>e.textContent=`${d.name} — Lv ${st.lv} ${rank(st.lv)}`);
-    const xpb=live('skills',h('div',{class:'bar xp'},fill),()=>fill.style.width=Math.min(100,st.xp/xpNeed(st.lv)*100)+'%');
-    const info=live('skills',h('div',{class:'muted'}),e=>e.textContent=
-      `🪙 ${fmt(payout(d.id))} / ${fmtT(cycleTime(d.id))} · XP ${fmt(st.xp)}/${fmt(xpNeed(st.lv))} · next ×2 at Lv ${(Math.floor(st.lv/25)+1)*25}`);
-    const right=st.coach?h('span',{class:'badge c'},'Coach ✓'):
-      live('skills',h('button',{onclick:()=>act.coach(d.id)},`Hire coach 🪙 ${fmt(coachCost(d.id))}`),e=>e.disabled=S.coins<coachCost(d.id));
-    box.append(h('div',{class:'card item'},h('span',{class:'icon'},d.icon),h('div',{class:'grow'},head,xpb,info),right));
-  });
-}
+    box.append(h('div',{class:'card item'},h('span',{class:'icon'},d.icon),h('div',{class:'grow'},
+      live('skills',h('div',{class:'name'}),e=>e.textContent=`${d.name} — Lv ${st.lv} · ${rank(st.lv)}`),
+      live('skills',h('div',{class:'bar'},fill),()=>fill.style.width=Math.min(100,st.xp/xpNeed(st.lv)*100)+'%'),
+      live('skills',h('div',{class:'muted'}),e=>e.textContent=
+        `${fmt(yieldOf(d.id))} pts/harvest · grows in ${fmtT(growTime(d.id))} · value ×${lvMult(d.id).toFixed(2)} · next ×2 at Lv ${(Math.floor(st.lv/25)+1)*25}`))))})}
 
-function renderUpgrades(){
-  const box=$('upgrades');box.replaceChildren();U.upgrades=[];
-  UPGRADES.forEach(u=>{
-    const btn=live('upgrades',h('button',{class:'primary',onclick:()=>act.upg(u.id)}),e=>{const c=upgCost(u);e.textContent=`🪙 ${fmt(c)}`;e.disabled=S.coins<c});
-    box.append(h('div',{class:'card item'},h('span',{class:'icon'},u.icon),
-      h('div',{class:'grow'},h('div',{class:'name'},`${u.name} — Lv ${S.upg[u.id]}`),h('div',{class:'muted'},u.desc)),btn));
-  });
-}
+function renderMastery(){const box=$('mastery');box.replaceChildren();U.mastery=[];
+  box.append(h('div',{class:'card'},h('div',{class:'name'},'🦉 Graduation (prestige)'),
+      h('p',{class:'muted'},'Graduate your class and start over wiser. Each Wisdom gives +5% to all sale prices, forever.'),
+      h('div',{},`Wisdom: ${S.wisdom} → +${S.wisdom*5}% prices`),
+      live('mastery',h('div',{class:'big'}),e=>e.textContent=`+${wisdomGain()} 🦉`),
+      live('mastery',h('div',{class:'muted'}),e=>{const t=wisdomTotal()+1;e.textContent=`Next Wisdom at 🪙 ${fmt(t*t*1e5)} lifetime earnings (now ${fmt(S.lifetime)})`}),
+      h('p',{},live('mastery',h('button',{class:'primary',onclick:act.prestige},'Graduate & reset'),e=>e.disabled=wisdomGain()<1))),
+    h('div',{class:'card',style:'margin-top:10px'},h('div',{class:'name'},'Stats'),
+      live('mastery',h('div',{class:'muted'}),e=>e.textContent=`This run: 🪙 ${fmt(S.runEarned)} · Graduations: ${S.prestiges}`),
+      h('p',{},h('button',{onclick:act.hardReset},'Hard reset'))))}
 
-function renderMastery(){
-  const box=$('mastery');box.replaceChildren();U.mastery=[];
-  const gain=live('mastery',h('div',{class:'big'}),e=>e.textContent=`+${fmt(wisdomGain())} 🦉`);
-  const btn=live('mastery',h('button',{class:'primary',onclick:act.prestige},'Master & reset'),e=>e.disabled=wisdomGain()<1);
-  const next=live('mastery',h('div',{class:'muted'}),e=>{const t=wisdomTotal()+1;e.textContent=`Next Wisdom at 🪙 ${fmt(t*t*1e5)} lifetime earnings`});
-  box.append(
-    h('div',{class:'card'},h('h2',{},'Mastery (prestige)'),
-      h('p',{class:'muted'},'Start over with everything you learned. Each Wisdom gives +5% coins and +2% XP forever.'),
-      h('div',{},`Wisdom: ${S.wisdom} → +${S.wisdom*5}% coins, +${S.wisdom*2}% XP`),gain,next,h('p',{},btn)),
-    h('div',{class:'card',style:'margin-top:10px'},h('h2',{},'Stats'),
-      live('mastery',h('div',{}),e=>e.textContent=`Lifetime earnings: 🪙 ${fmt(S.lifetime)}`),
-      live('mastery',h('div',{}),e=>e.textContent=`This run: 🪙 ${fmt(S.runEarned)}`),
-      h('div',{},`Masteries: ${S.prestiges}`),
-      h('p',{},h('button',{onclick:act.hardReset},'Hard reset'))));
-}
-
-function renderAll(){renderSlots();renderSkills();renderUpgrades();renderMastery()}
+const R={market:renderMarket,contracts:renderContracts,adv:renderAdv,skills:renderSkills,mastery:renderMastery};
+function renderAll(){renderTool();for(const k in R)R[k]()}
 function update(){
-  $('coins').textContent=fmt(S.coins);$('rate').textContent=fmt(rate());$('wis').textContent=S.wisdom;
-  for(const k in U)if(k==='slots'||!$(k).hidden)U[k].forEach(f=>f());
+  $('coins').textContent=fmt(S.coins);$('invv').textContent=fmt(invValue());$('wis').textContent=S.wisdom;
+  const cb=$('cbadge');cb.hidden=!S.contracts.length;cb.textContent=S.contracts.length;
+  if(dirty.contracts)renderContracts();if(dirty.skills)renderSkills();
+  U.tool.forEach(f=>f());for(const k in R)if(!$(k).hidden)U[k].forEach(f=>f());
 }
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const t=b.dataset.tab;
+  for(const x of $('tabs').children)x.classList.toggle('on',x===b);for(const k in R)$(k).hidden=k!==t;R[t]()});
 
-// ---- utils ----
+// ===== utils =====
 const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
-function fmt(n){if(n<1000)return n<10&&n%1?n.toFixed(1):String(Math.floor(n));
-  const e=Math.floor(Math.log10(n)/3);if(e>=SUF.length)return n.toExponential(2);
-  return (n/1000**e).toFixed(2).replace(/\.?0+$/,'')+SUF[e]}
-function fmtT(s){if(s<60)return(s<10?s.toFixed(1):Math.round(s))+'s';
-  if(s<3600)return`${Math.floor(s/60)}m ${Math.floor(s%60)}s`;return`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`}
-function toast(msg){const t=h('div',{class:'toast'},msg);$('toasts').append(t);setTimeout(()=>t.remove(),4000)}
+function fmt(n){if(n<1000)return n<100&&n%1?(+n.toFixed(1)).toString():String(Math.floor(n));
+  const e=Math.floor(Math.log10(n)/3);if(e>=SUF.length)return n.toExponential(2);return(n/1000**e).toFixed(2).replace(/\.?0+$/,'')+SUF[e]}
+function fmtT(s){if(s<60)return(s<10?s.toFixed(1):Math.round(s))+'s';if(s<3600)return`${Math.floor(s/60)}m ${Math.floor(s%60)}s`;return`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`}
+function toast(m){const t=h('div',{class:'toast'},m);$('toasts').append(t);setTimeout(()=>t.remove(),4000)}
 
-// ---- tabs & loop ----
-$('tabs').addEventListener('click',e=>{const t=e.target.dataset.tab;if(!t)return;
-  for(const b of $('tabs').children)b.classList.toggle('on',b.dataset.tab===t);
-  for(const s of['skills','upgrades','mastery'])$(s).hidden=s!==t;
-  ({skills:renderSkills,upgrades:renderUpgrades,mastery:renderMastery})[t]()});
-
-renderAll();
-advance((Date.now()-S.last)/1000);S.last=Date.now();
-function loop(){const now=Date.now();advance((now-S.last)/1000);S.last=now;update();requestAnimationFrame(loop)}
+// ===== boot =====
+layout();renderAll();advance((Date.now()-S.last)/1000);S.last=Date.now();
+let uiT=0;
+function loop(){const now=Date.now(),dt=(now-S.last)/1000;S.last=now;advance(dt);draw(Math.min(dt,.1));
+  uiT+=dt;if(uiT>.15){uiT=0;update()}requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-setInterval(save,5000);
-addEventListener('visibilitychange',()=>{if(document.hidden)save()});
-addEventListener('beforeunload',save);
+setInterval(save,5000);addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('beforeunload',save);
 </script>
 </body>
 </html>

@@ -69,5 +69,5 @@ Free Code Camp- App coding
   </form>
 </div>
 
-## Skill Grind (idle game)
-Open `skill-idle/index.html` in a browser. Train skills in slots, earn coins, level skills, hire coaches to automate, buy upgrades, and prestige for Wisdom.
+## Skill Academy (idle game)
+Open `skill-idle/index.html` in a browser. Enroll students at training tables, swipe to harvest skill points, sell them on a shifting market or to client contracts, and unlock automation through the advancement tree. Graduate (prestige) for Wisdom.
