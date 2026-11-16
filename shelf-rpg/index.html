@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Shelf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;600;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-screen 3D stage; HUD and dialogue float over it; battle UI docks at the bottom */
+:root{color-scheme:dark;--ink:#0f0d12;--panel:#1b181f;--panel2:#262129;--line:#4d4452;--text:#efe7d6;--muted:#a99f8e;--gold:#d8b46a;--gold2:#f3dca0;--blood:#c25555;--good:#8bbf6f;--focus:#8fb5dc;
+  --sky1:#2c2a31;--sky2:#c9a967;--sky3:#3d3832;
+  --display:'Cormorant SC',Georgia,'Times New Roman',serif;--body:'Alegreya Sans',system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font:16px/1.45 var(--body);overflow:hidden;-webkit-user-select:none;user-select:none}
+#game{position:fixed;inset:0;background:linear-gradient(180deg,var(--sky1) 0%,#5b5245 38%,var(--sky2) 52%,#6b5f4c 60%,var(--sky3) 100%)}
+#dim{position:absolute;inset:0;background:#0c0a14;opacity:0;pointer-events:none;transition:opacity 1s}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.num{position:absolute;transform:translate(-50%,-50%);font:700 22px var(--display);text-shadow:0 2px 0 #000,0 0 8px #000;white-space:nowrap}
+button{font:600 15px var(--body);color:var(--text);background:linear-gradient(180deg,#3a3340,#28232c);border:1px solid #5d5263;border-radius:6px;padding:9px 14px;cursor:pointer;box-shadow:0 2px 0 #0008,inset 0 1px 0 #ffffff14}
+button:hover:not(:disabled){border-color:var(--gold)}
+button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.gold{background:linear-gradient(180deg,#e2c27c,#a9813a);color:#1c1406;border-color:#f3dca0}
+.panel{background:linear-gradient(180deg,#221e26f2,#17141bf2);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px #000a}
+/* HUD */
+#hud{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.pm{display:flex;align-items:center;gap:8px;background:#141117cc;border:1px solid #ffffff1a;border-radius:8px;padding:5px 10px 5px 5px;min-width:190px}
+.sig{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 16px var(--display);color:#14110d;box-shadow:inset 0 -3px 0 #0004,0 0 0 2px #0006}
+.pm .nm{font:600 15px var(--display);line-height:1}.pm small{color:var(--muted);font-size:12px}
+.hpb{height:6px;background:#0008;border-radius:3px;overflow:hidden;margin-top:3px;width:120px}.hpb i{display:block;height:100%;background:linear-gradient(90deg,#b84b4b,#e07a5f)}
+#topr{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;gap:8px;align-items:center}
+#clock{background:#141117cc;border:1px solid #ffffff1a;border-radius:8px;padding:6px 10px;font:600 14px var(--display);letter-spacing:.04em}
+#prompt{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#141117e6;border:1px solid var(--gold);border-radius:999px;padding:7px 16px;font-weight:500;pointer-events:none;white-space:nowrap}
+#obj{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(56px + env(safe-area-inset-top,0px));max-width:260px;background:#141117b3;border-left:2px solid var(--gold);padding:6px 10px;font-size:14px;color:#e8dcc3;pointer-events:none}
+#obj b{font:600 13px var(--display);color:var(--gold);letter-spacing:.06em;display:block}
+/* dialogue */
+#dlg{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(760px,calc(100% - 24px));display:flex;gap:14px;padding:14px 16px;cursor:pointer}
+#dPor{width:64px;height:64px;font-size:30px}
+#dlg .body{flex:1;min-width:0}
+#dName{font:700 19px var(--display);color:var(--gold2);letter-spacing:.03em;min-height:4px}
+#dText{font-size:17px;line-height:1.5;margin-top:2px;white-space:pre-wrap}
+#dText.narr{font-style:italic;color:#e3d8c2}
+#dCh{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#dCh button{text-align:left}
+#dMore{position:absolute;right:14px;bottom:8px;color:var(--gold);animation:bob 1s infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+.sock{display:inline-block;min-width:3.2em;border-bottom:1px dashed var(--muted);color:transparent}
+/* cards / overlays */
+.full{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .5s}
+#card{flex-direction:column;text-align:center;background:radial-gradient(ellipse at center,#000c,#000f 70%);cursor:pointer}
+#card h2{font:600 clamp(30px,6vw,54px)/1.05 var(--display);margin:0;color:var(--gold2);text-wrap:balance}
+#card p{max-width:560px;font-size:18px;color:#e2d6bf;margin:14px 0 0;text-wrap:balance}
+#card small{margin-top:28px;color:var(--muted);letter-spacing:.2em;font-size:12px}
+#title{flex-direction:column;text-align:center;background:radial-gradient(ellipse at 50% 60%,#0000,#000b 75%)}
+#title h1{font:700 clamp(54px,12vw,120px)/.9 var(--display);margin:0;letter-spacing:.06em;color:#f3e6c4;text-shadow:0 4px 30px #000,0 0 2px #000}
+#title .sub{font:500 clamp(16px,3vw,22px) var(--display);letter-spacing:.3em;color:var(--gold);margin-top:10px}
+#title .tag{max-width:520px;color:#ddd2bb;margin:20px auto 26px;font-size:17px;text-shadow:0 1px 4px #000}
+#title .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#create{background:#0b0a0dee;overflow:auto;align-items:flex-start}
+#create .in{width:min(980px,100%);margin:auto;padding:10px 0 30px}
+#create h2{font:700 34px var(--display);margin:0 0 4px;color:var(--gold2)}
+#create p.lead{color:var(--muted);margin:0 0 16px}
+.houses{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.hc{text-align:left;padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:6px;background:linear-gradient(180deg,#26212b,#1b171f)}
+.hc.on{border-color:var(--gold);box-shadow:0 0 0 2px #d8b46a66}
+.hc h3{margin:0;font:700 22px var(--display)}
+.hc .motto{font-style:italic;color:#d9cdb5;font-size:14px}
+.hc .ex{font-size:13px;color:var(--muted)}
+.hc ul{margin:2px 0 0;padding-left:18px;font-size:13px;color:#d8ccb4}
+#create label{display:block;margin:18px 0 6px;font:600 15px var(--display);letter-spacing:.06em;color:var(--gold)}
+#create input{font:500 18px var(--body);background:#141117;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:9px 12px;width:min(320px,100%)}
+/* menu */
+#menu .in{width:min(760px,100%);max-height:calc(100% - 20px);display:flex;flex-direction:column;padding:14px}
+#menu nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+#menu nav button.on{border-color:var(--gold);color:var(--gold2)}
+#mBody{overflow:auto;min-height:0;padding-right:4px}
+.mcard{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#ffffff06}
+.mcard h4{margin:0 0 4px;font:700 18px var(--display);color:var(--gold2)}
+.ab{font-size:14px;margin:4px 0;color:#ddd1b9}.ab b{color:var(--text)}
+.mute{color:var(--muted);font-size:13px}
+/* battle */
+#bTop{position:absolute;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(760px,calc(100% - 24px));pointer-events:none}
+#order{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+#order span{font:600 12px var(--body);padding:3px 8px;border-radius:999px;background:#141117cc;border:1px solid #ffffff22}
+#order span.p{border-color:#8fb5dc88}#order span.e{border-color:#c2555588}#order span.cur{background:var(--gold);color:#1c1406}
+#blog{background:#141117d9;border:1px solid #ffffff1a;border-radius:8px;padding:6px 12px;font-size:15px;text-align:center;min-height:32px}
+#bPanel{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(760px,calc(100% - 16px));padding:10px 12px;max-height:46%;overflow:auto}
+#bWho{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#bWho .nm{font:700 19px var(--display)}
+.pips{display:flex;gap:3px}.pips i{width:12px;height:12px;border-radius:50%;background:#0009;border:1px solid #8fb5dc66}.pips i.f{background:radial-gradient(circle at 35% 30%,#fff9,#0000 60%),var(--focus)}
+#bActs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+#bActs button{text-align:left;display:flex;flex-direction:column;gap:1px;padding:8px 10px}
+#bActs button small{color:var(--muted);font-weight:500;font-size:12px}
+#bDesc{font-size:13px;color:#cfc3ab;margin-top:8px;min-height:18px}
+.tag{position:absolute;transform:translate(-50%,-100%);min-width:92px;text-align:center;pointer-events:none}
+.tag .n{font:600 13px var(--display);text-shadow:0 1px 3px #000;white-space:nowrap}
+.tag .hp{height:6px;background:#000a;border-radius:3px;overflow:hidden;margin:2px auto 0;width:80px}.tag .hp i{display:block;height:100%;background:linear-gradient(90deg,#b84b4b,#e07a5f)}
+.tag.p .hp i{background:linear-gradient(90deg,#4f8a54,#8bbf6f)}
+.tag .s{font-size:11px;color:#f0e2c2;text-shadow:0 1px 2px #000;white-space:nowrap;min-height:13px}
+.tag.pick{pointer-events:auto;cursor:pointer}.tag.pick .n{color:var(--gold2);text-decoration:underline}
+.tag.cur .n{color:var(--gold2)}
+#toasts{position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;z-index:5;width:min(520px,calc(100% - 24px))}
+.toast{background:#1b1720f2;border:1px solid var(--gold);border-radius:8px;padding:7px 14px;font-size:15px;animation:tf 3.6s forwards;text-align:center}
+@keyframes tf{0%{opacity:0;transform:translateY(-6px)}8%,85%{opacity:1;transform:none}100%{opacity:0}}
+@media (max-width:560px){#dText{font-size:16px}#dPor{width:48px;height:48px;font-size:22px}.pm{min-width:0}.hpb{width:80px}#obj{display:none}}
+@media (prefers-reduced-motion:reduce){.toast{animation-duration:3.6s}#dMore{animation:none}}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="dim"></div>
+  <canvas id="cv"></canvas>
+  <div id="fx"></div>
+  <div id="hud" hidden></div>
+  <div id="topr" hidden><span id="clock"></span><button id="menuBtn" title="Party, items and journal (Esc)">☰ Menu</button></div>
+  <div id="obj" hidden></div>
+  <div id="prompt" hidden></div>
+  <div id="bTop" hidden><div id="order"></div><div id="blog"></div></div>
+  <div id="bPanel" class="panel" hidden><div id="bWho"></div><div id="bActs"></div><div id="bDesc"></div></div>
+  <div id="dlg" class="panel" hidden><div class="sig" id="dPor"></div><div class="body"><div id="dName"></div><div id="dText"></div><div id="dCh"></div></div><div id="dMore">▼</div></div>
+  <div id="toasts"></div>
+  <div id="title" class="full" hidden>
+    <div><h1>The Shelf</h1><div class="sub">Chapter One · The Quarterly</div>
+    <p class="tag">Every nineteen years the world goes silent for a day, and afterwards something is missing. The next Tolling is four years away.</p>
+    <div class="btns"><button class="gold" id="bNew">New game</button><button id="bCont">Continue</button></div></div>
+  </div>
+  <div id="create" class="full" hidden><div class="in">
+    <h2>Who were you?</h2>
+    <p class="lead">Commissioner Verrel needs people with no House standing at all. You were born to one of the five Houses and cast out of it. Your House decides your powers.</p>
+    <div class="houses" id="houses"></div>
+    <label for="nameIn">Your name</label>
+    <input id="nameIn" maxlength="18" autocomplete="off" value="Ashe">
+    <div style="margin-top:16px"><button class="gold" id="bBegin" disabled>Begin</button></div>
+  </div></div>
+  <div id="menu" class="full" hidden><div class="in panel"><nav id="mNav"></nav><div id="mBody"></div><div style="margin-top:10px;text-align:right"><button id="mClose">Close</button></div></div></div>
+  <div id="card" class="full" hidden></div>
+  <div id="fade"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+'use strict';
+// =====================================================================
+// DATA
+// =====================================================================
+const HOUSES={
+  undrum:{name:'Undrum',title:'Bearer',motto:'“We are what the world leans on.”',col:'#c08a3e',cloak:'#2f2823',tunic:'#5b4835',
+    hp:46,ghp:9,atk:9,gatk:2,def:6,gdef:2,spd:4,gspd:1,exile:'Unassigned',
+    origin:'You were born at depth in the Sink and never given a carry. In Hollowspine the word for that is the worst word they have: unassigned.',
+    blurb:'Slow and immovable. Takes allies’ weight, pins foes in place, and turns stored load into crushing blows.',
+    abil:['crush','shoulder','plumb','set','overburden']},
+  saldric:{name:'Saldric',title:'Reckoner',motto:'“Nothing is given. Everything is owed.”',col:'#e6dfcf',cloak:'#33405e',tunic:'#cfc6b0',
+    hp:38,ghp:7,atk:8,gatk:2,def:4,gdef:1,spd:6,gspd:1,exile:'One of the clear',
+    origin:'You were born in the Hollow Markets of Tally with no bond to your name. On the Flats that means you do not legally exist.',
+    blurb:'Binds enemies with debts that tug at them every turn, then collects. Can move an ally’s wounds onto a debtor.',
+    abil:['strike','bind','distraint','assign','forgive']},
+  mirrowen:{name:'Mirrowen',title:'Hastener',motto:'“Let it finish.”',col:'#7f9c45',cloak:'#3a2c3c',tunic:'#4f5b33',
+    hp:35,ghp:6,atk:9,gatk:2,def:3,gdef:1,spd:7,gspd:1,exile:'Disowned lineage',
+    origin:'Your lineage was struck from the Wound’s rotations. You grew up on Imaryn’s Road, the track that does not regrow.',
+    blurb:'Sets rot running in every wound, then finishes it all at once. Can arrest a dying ally so they cannot fall.',
+    abil:['touch','quicken','stay','draught','longgreen']},
+  ikorran:{name:'Ikorran',title:'Stepper',motto:'“Nothing is far. Some things are merely unapproached.”',col:'#86a9cc',cloak:'#2b3850',tunic:'#4a5d73',
+    hp:32,ghp:6,atk:10,gatk:3,def:3,gdef:1,spd:9,gspd:2,exile:'Struck from the rolls',
+    origin:'The watchcourt struck your name from its rolls. With no shard that will watch for you, you crossed to the Shelf on foot.',
+    blurb:'Fast and fragile. Hands blades into occupied space, steps out of harm, and stretches the distance a foe must cross.',
+    abil:['hand','handthrough','step','stretch','attenuate']},
+  thessal:{name:'Thessal',title:'Regarder',motto:'“What is watched, remains.”',col:'#efe3c2',cloak:'#d9d2bf',tunic:'#a99f86',
+    hp:35,ghp:6,atk:8,gatk:2,def:3,gdef:1,spd:6,gspd:1,exile:'Thinned',
+    origin:'You drifted below notice in Vantage Antwhile. People forget you mid-sentence. You have learned to repeat yourself politely.',
+    blurb:'Builds up Regard from attention and spends it as raw force. Makes foes stare at nothing and hides allies from notice.',
+    abil:['glare','scrutiny','fix','unregard','persist']},
+};
+const LV=[0,40,100,180,280,400];
+const AB={
+  crush:{n:'Crush',cost:0,tgt:'enemy',d:'A heavy, deliberate blow. 1× damage.'},
+  shoulder:{n:'Shoulder',cost:1,tgt:'ally',d:'Take an ally’s weight for 2 rounds. Half of every hit on them comes to you instead, and each hit you absorb stores 1 Load.'},
+  plumb:{n:'Plumb',cost:2,tgt:'enemy',d:'Turn the target’s own weight against it. 1.3× damage and Heavy: it acts last for 2 rounds.'},
+  set:{n:'Set',cost:3,tgt:'enemy',d:'Lend your weight to the target. It loses its next turn. You become Light and take +50% damage until your next turn.'},
+  overburden:{n:'Overburden',cost:2,tgt:'enemy',lvl:3,d:'Put all stored Load through one body. 1× damage, +1× per Load stored. Uses all Load.'},
+  strike:{n:'Strike',cost:0,tgt:'enemy',d:'A clerk’s blade. 1× damage.'},
+  bind:{n:'Bind',cost:1,tgt:'enemy',d:'Witness a promise the target never meant to make. +2 Bond (max 6). Each Bond tugs for 2 damage at the start of its turn.'},
+  distraint:{n:'Distraint',cost:3,tgt:'enemy',d:'Collect years from a bonded target. 0.9× damage per Bond, then the Bond is spent. You heal half the damage.'},
+  assign:{n:'Assign',cost:2,tgt:'ally',d:'Move an ally’s wounds onto your most-bonded enemy. Heals the ally 35% of max HP and deals the same to that enemy. Clears the ally’s Rot.'},
+  forgive:{n:'Forgiveness',cost:5,tgt:'all',lvl:3,d:'Annul every bond at once. Each enemy takes 7 damage per Bond it carries.'},
+  touch:{n:'Hasten',cost:0,tgt:'enemy',d:'A touch that sets the body running toward its end. 0.8× damage and +1 Rot.'},
+  quicken:{n:'Quicken',cost:2,tgt:'enemy',d:'Advance every wound to its conclusion. 1× damage plus all of the target’s remaining Rot damage at once.'},
+  stay:{n:'Stay',cost:2,tgt:'ally',d:'Arrest an ally for 2 rounds. They cannot fall below 1 HP and their Rot stops.'},
+  draught:{n:'Draught of the Slow',cost:1,tgt:'ally',d:'Heal 40% of max HP now. The fatigue comes due later: 10% of max HP after 3 turns.'},
+  longgreen:{n:'The Long Green',cost:0,tgt:'self',lvl:3,d:'Spend your own years. Lose 20% of max HP; gain +60% attack and act first for 3 rounds.'},
+  hand:{n:'Hand',cost:0,tgt:'enemy',d:'Hand a blade across the gap. 1× damage.'},
+  handthrough:{n:'Hand-through',cost:2,tgt:'enemy',d:'Hand an arrowhead into space that is already occupied. 1.6× damage that ignores defense.'},
+  step:{n:'Step',cost:1,tgt:'self',d:'Shorten the nearness. Evade the next attack and act first next round.'},
+  stretch:{n:'Stretch',cost:2,tgt:'enemy',d:'Lengthen the target’s last ten feet. 0.6× damage; it acts last for 2 rounds and its next attack deals half damage.'},
+  attenuate:{n:'Attenuate',cost:3,tgt:'enemy',lvl:3,d:'Make a limb far from its body. 1.2× damage and +3 Rot.'},
+  glare:{n:'Glare',cost:0,tgt:'enemy',d:'A hard, deliberate look. 0.8× damage and +1 Regard.'},
+  scrutiny:{n:'Scrutiny',cost:1,tgt:'enemy',d:'Spend all Regard as concentrated attention. 0.75× damage per Regard, ignoring defense.'},
+  fix:{n:'Fix',cost:2,tgt:'enemy',d:'Make something compelling. 75% chance the target spends its next turn staring (30% against strong foes).'},
+  unregard:{n:'Unregard',cost:2,tgt:'ally',d:'An ally becomes not worth noticing. Enemies cannot target them until their next turn.'},
+  persist:{n:'Spend a Regard',cost:0,tgt:'ally',lvl:3,d:'Needs 3 Regard. Make an ally persist past their nature: heal 60% of max HP, clear Rot, and Stay them for 1 round.'},
+};
+const ITEMS={
+  draught:{n:'Slow draught',d:'Mirrowen medicine. Heals 50% of max HP.',price:15},
+  bead:{n:'Regard bead',d:'A charged bead of mirror-glass. Restores 3 Focus.',price:20},
+  salt:{n:'Witness-salt chip',d:'Clears Rot and Bond from one ally.',price:12},
+};
+const ENEMY={
+  cutpurse:{n:'Ring-runner',kind:'ikorran',hp:24,atk:8,def:2,spd:9,xp:14,salt:6,skills:['stab','hthru']},
+  broker:{n:'Bond-broker',kind:'saldric',hp:28,atk:7,def:3,spd:6,xp:14,salt:8,skills:['bindE','collect']},
+  anchor:{n:'Anchor-man',kind:'undrum',hp:42,atk:9,def:5,spd:3,xp:18,salt:6,skills:['maul','plumbE']},
+  hound:{n:'Spore-hound',kind:'hound',hp:20,atk:7,def:1,spd:8,xp:12,salt:2,skills:['bite']},
+  swine:{n:'Hollow-swine',kind:'swine',hp:52,atk:9,def:4,spd:4,xp:30,salt:4,skills:['gore','trample']},
+  moths:{n:'Bloom-moths',kind:'moths',hp:24,atk:5,def:0,spd:10,xp:20,salt:2,skills:['spores']},
+  sellim:{n:'Sellim Ninth-Hand',kind:'undrum',hp:170,atk:12,def:6,spd:5,xp:120,salt:60,boss:true,skills:['cable','shoulderE','shear','plumbE']},
+};
+const SKINS=['#e9c4a2','#cf9f78','#a87452','#7a4f34','#f0d6bf'],HAIRS=['#211a15','#4a3020','#8c6a3e','#cfc6b8','#2a2a30','#6e2d1f'];
+
+// =====================================================================
+// UTIL
+// =====================================================================
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function h(tag,p={},...k){const e=document.createElement(tag);for(const[a,v]of Object.entries(p)){if(a.startsWith('on'))e.addEventListener(a.slice(2),v);else if(a==='class')e.className=v;else if(a==='style')e.setAttribute('style',v);else if(a in e)e[a]=v;else e.setAttribute(a,v)}for(const c of k.flat())if(c!=null&&c!==false)e.append(c);return e}
+function toast(m){const b=$('toasts');while(b.children.length>=3)b.firstChild.remove();const t=h('div',{class:'toast'},m);b.append(t);setTimeout(()=>t.remove(),3600)}
+function sig(house){const H=HOUSES[house];const e=h('div',{class:'sig'},H?H.name[0]:'·');e.style.background=H?`radial-gradient(circle at 35% 30%,#fff8,#0000 60%),${H.col}`:'#555';return e}
+let G=null,mode='title',lockN=0;
+const locked=()=>lockN>0;
+async function busy(fn){lockN++;try{return await fn()}finally{lockN--}}
+function save(){if(!G)return;try{localStorage.setItem('shelf-rpg-v1',JSON.stringify(G))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem('shelf-rpg-v1');return s?JSON.parse(s):null}catch(e){return null}}
+
+// party
+function mstats(m){const H=HOUSES[m.house],L=m.lvl-1;return{maxhp:H.hp+H.ghp*L,atk:H.atk+H.gatk*L,def:H.def+H.gdef*L,spd:H.spd+H.gspd*L}}
+function mkMember(id,name,house,lvl){const m={id,name,house,lvl,xp:LV[lvl-1]||0,hp:0};m.hp=mstats(m).maxhp;return m}
+function gainXP(m,x){m.xp+=x;while(m.lvl<LV.length&&m.xp>=LV[m.lvl]){const before=mstats(m).maxhp;m.lvl++;m.hp+=mstats(m).maxhp-before;
+  toast(`${m.name} reached level ${m.lvl}.`);const H=HOUSES[m.house];for(const a of H.abil)if(AB[a].lvl===m.lvl)toast(`${m.name} learned ${AB[a].n}.`)}}
+function joinParty(id,name,house){const lv=Math.max(1,G.party[0].lvl);const m=mkMember(id,name,house,lv);G.party.push(m);toast(`${name} joined the party (${HOUSES[house].name} · ${HOUSES[house].title}).`);renderHud();buildFollowers()}
+function jot(title,body){if(G.journal.some(j=>j.title===title))return;G.journal.push({title,body});toast(`Journal: ${title}`)}
+function healAll(){for(const m of G.party)m.hp=mstats(m).maxhp}
+
+// =====================================================================
+// THREE: setup and helpers
+// =====================================================================
+const cv=$('cv');
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const GRAD=new THREE.DataTexture(new Uint8Array([95,160,215,255]),4,1,THREE.RedFormat);GRAD.minFilter=GRAD.magFilter=THREE.NearestFilter;GRAD.needsUpdate=true;
+const INK=new THREE.MeshBasicMaterial({color:'#120e14',side:THREE.BackSide});
+const SIL=new THREE.MeshBasicMaterial({color:'#f3dca0',transparent:true,opacity:.45,depthWrite:false,depthFunc:THREE.GreaterDepth});
+const matCache={};
+function M(color,o={}){const k=color+JSON.stringify(o);if(matCache[k])return matCache[k];const{roughness,metalness,...r}=o;return matCache[k]=new THREE.MeshToonMaterial({color,gradientMap:GRAD,...r})}
+function mk(geo,mat,p=[0,0,0],r=[0,0,0],cast=true){const m=new THREE.Mesh(geo,mat);m.position.set(...p);m.rotation.set(...r);m.castShadow=cast;m.receiveShadow=true;return m}
+function rbox(w,hh,d,r=.03){r=Math.max(.002,Math.min(r,w/2-.002,d/2-.002,hh/2-.002));const s=new THREE.Shape(),x=w/2-r,y=d/2-r;
+  s.moveTo(-x,-y);s.lineTo(x,-y);s.lineTo(x,y);s.lineTo(-x,y);s.lineTo(-x,-y);
+  const g=new THREE.ExtrudeGeometry(s,{depth:Math.max(.001,hh-2*r),bevelEnabled:true,bevelThickness:r,bevelSize:r,bevelSegments:2,curveSegments:2});g.rotateX(-Math.PI/2);g.center();return g}
+const _s=new THREE.Vector3(),_c=new THREE.Vector3(),V=new THREE.Vector3();
+function ink(root,w=.02){const list=[];root.traverse(o=>{if(o.isMesh&&!o.isInk&&!o.isSil&&!o.userData.noInk&&!o.userData.inked&&!o.material.transparent)list.push(o)});
+  for(const m of list){m.userData.inked=1;if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();m.geometry.boundingBox.getSize(_s);m.geometry.boundingBox.getCenter(_c);
+    if(Math.min(_s.x,_s.y,_s.z)<1e-4||Math.max(_s.x,_s.y,_s.z)<.04)continue;
+    const o=new THREE.Mesh(m.geometry,INK);o.isInk=true;o.castShadow=false;
+    o.scale.set(Math.min(1.25,1+2*w/_s.x),Math.min(1.25,1+2*w/_s.y),Math.min(1.25,1+2*w/_s.z));o.position.set(_c.x*(1-o.scale.x),_c.y*(1-o.scale.y),_c.z*(1-o.scale.z));m.add(o)}
+  return root}
+function silhouette(root){const list=[];root.traverse(o=>{if(o.isMesh&&!o.isInk&&!o.isSil)list.push(o)});for(const m of list){const s=new THREE.Mesh(m.geometry,SIL);s.isSil=true;s.renderOrder=20;m.add(s)}}
+function tex(w,hh,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=hh;draw(c.getContext('2d'),w,hh);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping}return t}
+function noiseTex(base,spots,n=900,s=3){return tex(256,256,(c,w,hh)=>{c.fillStyle=base;c.fillRect(0,0,w,hh);for(let i=0;i<n;i++){c.fillStyle=rnd(spots);c.globalAlpha=.08+Math.random()*.18;const r=1+Math.random()*s;c.beginPath();c.arc(Math.random()*w,Math.random()*hh,r,0,7);c.fill()}c.globalAlpha=1},true)}
+const TX={
+  stone:noiseTex('#8d8a86',['#a4a19c','#77746f','#9a958c'],700,4),
+  court:noiseTex('#a39d93',['#b8b2a6','#8e897f'],600,4),
+  plaza:noiseTex('#b0aba1',['#c4bfb4','#99948a'],500,5),
+  salt:tex(256,256,(c,w,hh)=>{c.fillStyle='#d9d3c3';c.fillRect(0,0,w,hh);c.strokeStyle='#b9b2a0';c.lineWidth=2;for(let y=0;y<hh+40;y+=44)for(let x=0;x<w+50;x+=52){const ox=(y/44)%2?26:0;c.beginPath();for(let k=0;k<6;k++){const a=k/6*Math.PI*2;c.lineTo(x+ox+Math.cos(a)*24,y+Math.sin(a)*24)}c.closePath();c.stroke()}},true),
+  scrub:noiseTex('#6d6447',['#7c7350','#5a5238','#857a55','#4d4a35'],1400,5),
+  pave:noiseTex('#7e7b77',['#8f8b86','#6e6b67'],500,3),
+  water:tex(64,256,(c,w,hh)=>{c.fillStyle='#3d5560';c.fillRect(0,0,w,hh);for(let i=0;i<40;i++){c.fillStyle='rgba(190,215,220,.25)';c.fillRect(Math.random()*w,Math.random()*hh,2+Math.random()*3,10+Math.random()*30)}},true),
+  glow:tex(128,128,(c,w)=>{const g=c.createRadialGradient(w/2,w/2,0,w/2,w/2,w/2);g.addColorStop(0,'#fff');g.addColorStop(.35,'#ffffff88');g.addColorStop(1,'#fff0');c.fillStyle=g;c.fillRect(0,0,w,w)}),
+};
+const GEO={leg:new THREE.CapsuleGeometry(.065,.3,4,10),boot:rbox(.11,.08,.17,.03),torso:new THREE.CapsuleGeometry(.16,.3,6,14),
+  cloak:new THREE.CylinderGeometry(.2,.34,.74,18,1,true,Math.PI*.32,Math.PI*1.36),head:new THREE.SphereGeometry(.15,24,18),
+  hair:new THREE.SphereGeometry(.158,24,12,0,Math.PI*2,0,Math.PI*.5),hood:new THREE.SphereGeometry(.2,22,14,Math.PI*.3,Math.PI*1.4,0,Math.PI*.62),
+  eye:new THREE.SphereGeometry(.018,8,6),arm:new THREE.CapsuleGeometry(.05,.24,4,8),hand:new THREE.SphereGeometry(.05,10,8),
+  ball:new THREE.SphereGeometry(.06,10,8),plane:new THREE.PlaneGeometry(1,1),box:new THREE.BoxGeometry(1,1,1)};
+
+// ---- character figures ----
+function figure(house,o={}){
+  const H=HOUSES[house]||HOUSES.undrum,g=new THREE.Group(),skin=M(o.skin||rnd(SKINS)),hair=M(o.hair||rnd(HAIRS));
+  const bulk=house==='undrum'?1.2:1,pants=M(o.pants||'#2a2521'),cloakM=M(o.cloak||H.cloak,{side:THREE.DoubleSide});
+  const legs=[-1,1].map(s=>{const l=new THREE.Group();l.position.set(s*.085*bulk,.44,0);l.add(mk(GEO.leg,pants,[0,-.2,0]));l.add(mk(GEO.boot,M('#1d1916'),[0,-.4,.035]));g.add(l);return l});
+  const body=mk(GEO.torso,M(o.tunic||H.tunic),[0,.76,0]);body.scale.set(bulk,1,bulk*.85);g.add(body);
+  const cl=mk(GEO.cloak,cloakM,[0,.68,-.015]);cl.scale.set(bulk,1,bulk);g.add(cl);
+  const head=new THREE.Group();head.position.set(0,1.15,0);g.add(head);
+  head.add(mk(GEO.head,skin));
+  if(o.hood!==false&&(o.hood||house==='mirrowen'||house==='thessal'))head.add(mk(GEO.hood,cloakM,[0,.02,-.01]));else head.add(mk(GEO.hair,hair,[0,.02,-.015],[-.3,0,0]));
+  for(const s of[-1,1]){const e=mk(GEO.eye,M('#140f12'),[s*.055,.01,.135],[0,0,0],false);e.userData.noInk=1;head.add(e)}
+  const arms=[-1,1].map(s=>{const a=new THREE.Group();a.position.set(s*.22*bulk,.95,0);a.rotation.z=s*.12;a.add(mk(GEO.arm,M(o.tunic||H.tunic),[0,-.15,0]));a.add(mk(GEO.hand,skin,[0,-.31,0]));g.add(a);return a});
+  const R=arms[1],Lf=arms[0];
+  if(house==='undrum'){for(const s of[-1,1])g.add(mk(new THREE.SphereGeometry(.1,14,10),M(o.trim||'#8a6a3a'),[s*.24*bulk,.98,0]));
+    if(o.weapon!=='blade'){const w=new THREE.Group();w.position.set(0,-.32,.02);w.add(mk(new THREE.CylinderGeometry(.022,.022,.7,8),M('#3b2a1d'),[0,-.05,0]));w.add(mk(rbox(.2,.13,.13,.03),M('#4a4744'),[0,-.4,0]));R.add(w)}
+    else{const w=new THREE.Group();w.position.set(0,-.32,.05);w.rotation.x=.4;w.add(mk(rbox(.04,.08,.04,.01),M('#2a2420'),[0,0,0]));w.add(mk(rbox(.05,.62,.015,.006),M('#c8ccd2'),[0,.34,0]));R.add(w);
+      g.add(mk(new THREE.TorusGeometry(.17,.035,6,16),M('#6b5b46'),[.12,.95,-.08],[Math.PI/2.3,.3,0]))}}
+  if(house==='saldric'){Lf.add(mk(rbox(.15,.2,.04,.01),M('#e9e2cc'),[0,-.34,.06]));g.add(mk(new THREE.TorusGeometry(.17,.018,6,20),M('#f2efe6'),[0,.8,0],[Math.PI/2,0,.5]));
+    R.add(mk(rbox(.03,.34,.012,.005),M('#cfd3d8'),[0,-.48,.05]))}
+  if(house==='mirrowen'){const s=new THREE.Group();s.position.set(0,-.33,.04);s.add(mk(new THREE.CylinderGeometry(.018,.018,.32,6),M('#3a2a1e'),[0,0,0]));s.add(mk(new THREE.TorusGeometry(.12,.016,6,14,Math.PI*1.2),M('#8f9a6a'),[.09,-.16,0]));R.add(s);
+    for(let k=0;k<3;k++){const v=mk(GEO.ball,new THREE.MeshBasicMaterial({color:'#b6e36a'}),[-.12+k*.12,.58,.15],[0,0,0],false);v.scale.setScalar(.55);v.userData.noInk=1;g.add(v)}}
+  if(house==='ikorran'){const b=mk(new THREE.TorusGeometry(.34,.014,6,24,Math.PI*.9),M('#6b4e2c'),[0,-.32,.05],[0,Math.PI/2,Math.PI*.55]);Lf.add(b);
+    for(const s of[-1,1])head.add(mk(new THREE.TorusGeometry(.04,.012,6,12),M('#b07d3a'),[s*.055,.08,.13],[0,0,0],false));
+    g.add(mk(new THREE.TorusGeometry(.13,.04,6,14),M('#9c3f33'),[0,1.0,0],[Math.PI/2,0,0]))}
+  if(house==='thessal'){const mask=mk(new THREE.CircleGeometry(.11,24),new THREE.MeshBasicMaterial({color:'#f7f1df'}),[0,.02,.152],[0,0,0],false);mask.userData.noInk=1;head.add(mask);
+    const st=new THREE.Group();st.position.set(0,-.3,.04);st.add(mk(new THREE.CylinderGeometry(.016,.016,1.1,6),M('#5a4e3a'),[0,.2,0]));
+    const disc=mk(new THREE.CylinderGeometry(.11,.11,.02,20),M('#fff4cf',{emissive:'#a08a4a',emissiveIntensity:.4}),[0,.78,0],[Math.PI/2,0,0]);st.add(disc);R.add(st)}
+  g.userData={legs,arms,head,body,house};g.scale.setScalar((o.scale||1)*1.3);
+  return ink(g,.017)}
+function hound(){const g=new THREE.Group(),c=M('#6f7458'),d=M('#4c4f3c');
+  const b=mk(new THREE.CapsuleGeometry(.15,.42,6,12),c,[0,.42,0],[0,0,Math.PI/2]);g.add(b);
+  const hd=new THREE.Group();hd.position.set(.36,.55,0);hd.add(mk(new THREE.SphereGeometry(.13,14,10),c));hd.add(mk(rbox(.16,.09,.1,.03),d,[.12,-.03,0]));
+  for(const s of[-1,1]){hd.add(mk(new THREE.ConeGeometry(.04,.09,6),d,[-.02,.12,s*.06]));const e=mk(GEO.eye,new THREE.MeshBasicMaterial({color:'#d6e86a'}),[.08,.04,s*.07],[0,0,0],false);e.userData.noInk=1;hd.add(e)}g.add(hd);
+  const legs=[];for(const x of[-.2,.2])for(const z of[-.08,.08]){const l=new THREE.Group();l.position.set(x,.36,z);l.add(mk(new THREE.CapsuleGeometry(.035,.22,4,6),d,[0,-.16,0]));g.add(l);legs.push(l)}
+  for(let k=0;k<6;k++){const s=mk(GEO.ball,new THREE.MeshBasicMaterial({color:'#b5d46a',transparent:true,opacity:.7}),[Math.random()*.5-.25,.6+Math.random()*.2,Math.random()*.3-.15],[0,0,0],false);s.scale.setScalar(.3);g.add(s)}
+  g.rotation.y=0;g.userData={legs,arms:[],head:hd,body:b,quad:true};return ink(g,.016)}
+function swine(){const g=new THREE.Group(),c=M('#c9a9a0'),d=M('#8e6f68');
+  const b=mk(new THREE.CapsuleGeometry(.3,.5,8,14),c,[0,.82,0],[0,0,Math.PI/2]);b.scale.set(1,1,1.1);g.add(b);
+  const hd=new THREE.Group();hd.position.set(.55,.88,0);hd.add(mk(new THREE.SphereGeometry(.2,14,10),c));hd.add(mk(new THREE.CylinderGeometry(.08,.09,.12,12),d,[.2,-.04,0],[0,0,Math.PI/2]));
+  for(const s of[-1,1]){const e=mk(GEO.eye,M('#1a0f0f'),[.12,.06,s*.12],[0,0,0],false);e.userData.noInk=1;hd.add(e);hd.add(mk(new THREE.ConeGeometry(.05,.12,6),d,[-.02,.18,s*.1]))}g.add(hd);
+  const legs=[];for(const x of[-.3,.3])for(const z of[-.14,.14]){const l=new THREE.Group();l.position.set(x,.62,z);l.add(mk(new THREE.CapsuleGeometry(.05,.5,4,6),d,[0,-.3,0]));g.add(l);legs.push(l)}
+  g.userData={legs,arms:[],head:hd,body:b,quad:true};return ink(g,.02)}
+function moths(){const g=new THREE.Group(),list=[];const wing=new THREE.MeshToonMaterial({color:'#cbb88f',gradientMap:GRAD,side:THREE.DoubleSide});
+  for(let k=0;k<6;k++){const m=new THREE.Group();m.add(mk(new THREE.CapsuleGeometry(.03,.1,4,6),M('#5d4d36'),[0,0,0],[0,0,Math.PI/2]));
+    const wl=[-1,1].map(s=>{const w=mk(GEO.plane,wing,[0,0,s*.09],[Math.PI/2,0,0],false);w.scale.set(.16,.18,1);m.add(w);return w});m.userData.w=wl;g.add(m);list.push(m)}
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#c8e37a',transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending}));glow.scale.set(1.4,1.4,1);glow.position.y=1;g.add(glow);
+  g.userData={moths:list,legs:[],arms:[],body:list[0]};return ink(g,.012)}
+function enemyModel(k){const E=ENEMY[k];if(E.kind==='hound')return hound();if(E.kind==='swine')return swine();if(E.kind==='moths')return moths();
+  if(k==='sellim')return figure('undrum',{tunic:'#3b3f45',cloak:'#1f2226',trim:'#5b5f66',weapon:'blade',hair:'#1a1a1d',scale:1.1});
+  return figure(E.kind,{cloak:k==='cutpurse'?'#3d3a2a':k==='broker'?'#4a2d2d':'#2d2a28',tunic:k==='broker'?'#7d6b5a':undefined,hood:k==='cutpurse'})}
+function animFig(f,t,moving,speed=1){const u=f.userData;if(!u)return;const s=Math.sin(t*9*speed);
+  if(u.moths){u.moths.forEach((m,i)=>{const a=t*2.4+i*1.05;m.position.set(Math.cos(a)*.35,1+Math.sin(a*1.7)*.25,Math.sin(a)*.35);m.rotation.y=-a;const fl=Math.sin(t*30+i)*.8;m.userData.w[0].rotation.x=Math.PI/2+fl;m.userData.w[1].rotation.x=Math.PI/2-fl});return}
+  if(moving){u.legs.forEach((l,i)=>l.rotation.x=(u.quad?(i%2?1:-1)*(i<2?1:-1):(i?1:-1))*s*.6);if(u.arms[0]){u.arms[0].rotation.x=s*.4;u.arms[1].rotation.x=-s*.4}}
+  else{u.legs.forEach(l=>l.rotation.x*=.8);if(u.arms[0]){u.arms[0].rotation.x*=.85;u.arms[1].rotation.x*=.85}if(u.body)u.body.scale.y=1+Math.sin(t*2)*.012}}
+
+// =====================================================================
+// WORLD (explore)
+// =====================================================================
+const world=new THREE.Scene();
+const hemi=new THREE.HemisphereLight('#e9d9b8','#3b342c',.6);world.add(hemi);
+const sun=new THREE.DirectionalLight('#ffe9c2',.55);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0005;sun.shadow.normalBias=.03;world.add(sun,sun.target);
+const ocam=new THREE.OrthographicCamera(-5,5,5,-5,.1,200);
+const ISO=new THREE.Vector3(1,1.55,1.15).normalize();
+let A=null,areaRoot=null,player=null,followers=[],ents=[],grid=null,waterTex=null,camT=new THREE.Vector3(),trail=[];
+const P={x:0,y:0,fx:0,fz:0,path:[],moving:false,face:0,pending:null};
+function tw(x,y){return[x-grid.w/2+.5,y-grid.h/2+.5]}
+function tile(x,y){return grid.t[y]&&grid.t[y][x]}
+function solidAt(x,y){const c=tile(x,y);if(c==null)return true;if('#~bWg'.includes(c))return true;return ents.some(e=>e.solid&&e.vis&&e.tiles.some(t=>t[0]===x&&t[1]===y))}
+function G2(w,hh,c){return{w,h:hh,t:Array.from({length:hh},()=>Array(w).fill(c))}}
+function R2(g,x0,y0,x1,y1,c){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(g.t[y]&&g.t[y][x]!==undefined)g.t[y][x]=c}
+function C2(g,cx,cy,r,c){for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(Math.hypot(x-cx,y-cy)<=r)g.t[y][x]=c}
+function seeded(s){return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646}}
+
+function buildTerrain(style){
+  const R=areaRoot,{w,h:hh}=grid;const cnt=ch=>grid.t.flat().filter(c=>ch.includes(c)).length;
+  const base={ring:TX.stone,compound:TX.salt,road:TX.scrub,gate:TX.scrub}[style];base.repeat.set(w/4,hh/4);
+  R.add(mk(new THREE.BoxGeometry(w+6,.2,hh+6),M('#ffffff',{map:base}),[0,-.1,0],[0,0,0],false));
+  const inst=(chars,geo,mat,y,sy,colorFn)=>{const n=cnt(chars);if(!n)return null;const m=new THREE.InstancedMesh(geo,mat,n);m.castShadow=sy>.3;m.receiveShadow=true;let i=0;const d=new THREE.Object3D();
+    for(let yy=0;yy<hh;yy++)for(let x=0;x<w;x++)if(chars.includes(grid.t[yy][x])){const[wx,wz]=tw(x,yy);const s=typeof sy==='function'?sy(x,yy):sy;d.position.set(wx,y+(s/2),wz);d.scale.set(1,s,1);d.updateMatrix();m.setMatrixAt(i,d.matrix);if(colorFn)m.setColorAt(i,new THREE.Color(colorFn(x,yy)));i++}
+    R.add(m);return m};
+  if(style==='ring'){
+    const hgt=(x,y)=>((Math.floor(x/3)*7+Math.floor(y/3)*13)%5<2)?2.5:1.8;
+    inst('#',GEO.box,M('#bdb9b2',{map:TX.stone}),0,hgt,(x,y)=>{const v=.82+((x*31+y*17)%7)*.025;return new THREE.Color(v,v*.99,v*.97)});
+    inst('#',new THREE.BoxGeometry(1.02,1,1.02),M('#7d7a75'),0,(x,y)=>hgt(x,y)+.06);
+    inst(',',GEO.box,M('#ffffff',{map:TX.court}),0,.03);inst('o',GEO.box,M('#ffffff',{map:TX.plaza}),0,.035);
+    waterTex=TX.water;waterTex.repeat.set(1,1);
+    inst('~',GEO.box,new THREE.MeshToonMaterial({map:waterTex,gradientMap:GRAD,color:'#9fc0c8'}),-.02,.03);
+    inst('~',new THREE.BoxGeometry(1.0,1,1),M('#6f6c68'),-.05,.02);
+  }
+  if(style==='compound'){
+    inst('#',GEO.box,M('#e9e4d6'),0,1.3,(x,y)=>(x+y)%2?'#ffffff':'#e6e2d6');
+    inst('#',new THREE.BoxGeometry(1.04,1,1.04),M('#8aa3c2'),0,1.36);
+  }
+  if(style==='road'||style==='gate'){
+    TX.pave.repeat.set(1,1);inst('=',GEO.box,M('#ffffff',{map:TX.pave}),0,.05,(x,y)=>{const v=.9+((x*7+y*3)%5)*.03;return new THREE.Color(v,v,v)});
+    inst('-',GEO.box,M('#8a8577',{transparent:true,opacity:.55}),0,.02);
+    const rng=seeded(w*hh+7),tuft=new THREE.ConeGeometry(.08,.3,5),tm=M('#7d7448');
+    const n=Math.floor(w*hh*1.2),m=new THREE.InstancedMesh(tuft,tm,n),d=new THREE.Object3D();
+    for(let i=0;i<n;i++){const x=rng()*w,y=rng()*hh;const c=tile(Math.floor(x),Math.floor(y));const ok=c==='s';d.position.set(x-w/2,ok?.12:-5,y-hh/2);d.rotation.set((rng()-.5)*.4,rng()*3,(rng()-.5)*.4);d.scale.setScalar(.6+rng()*.9);d.updateMatrix();m.setMatrixAt(i,d.matrix)}
+    R.add(m);
+    const rocks=[];for(let y=0;y<hh;y++)for(let x=0;x<w;x++)if(grid.t[y][x]==='b')rocks.push([x,y]);
+    for(const[x,y]of rocks){const[wx,wz]=tw(x,y);const r=rng();if(r<.5){const s=mk(new THREE.DodecahedronGeometry(.42,0),M('#7a7468'),[wx,.25,wz],[rng(),rng(),rng()]);s.scale.set(1,.7,1);R.add(s)}
+      else{const b=new THREE.Group();b.position.set(wx,0,wz);for(let k=0;k<4;k++){const l=mk(new THREE.SphereGeometry(.26,10,8),M(rng()<.5?'#5b6340':'#6c6a42'),[(rng()-.5)*.4,.25+rng()*.15,(rng()-.5)*.4]);l.scale.set(1,.8,1);b.add(l)}R.add(b)}}
+    if(style==='gate'){inst('W',GEO.box,M('#ffffff',{map:TX.stone}),0,1.5);inst('W',new THREE.BoxGeometry(1.02,1,1.02),M('#9c9892'),0,1.56)}
+  }
+  ink(R,.03);
+}
+
+// entity factory
+function ent(o){const e={solid:true,vis:true,tiles:[[o.x,o.y]],...o};if(o.w){e.tiles=[];for(let y=o.y;y<o.y+(o.hh||1);y++)for(let x=o.x;x<o.x+o.w;x++)e.tiles.push([x,y])}return e}
+function placeEnt(e){
+  if(e.model){const m=e.model();const cx=e.w?e.x+(e.w-1)/2:e.x,cy=e.hh?e.y+(e.hh-1)/2:e.y;const[wx,wz]=tw(cx,cy);m.position.set(wx,0,wz);if(e.rot!=null)m.rotation.y=e.rot;areaRoot.add(m);e.obj=m;
+    if(e.marker){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:e.marker,transparent:true,opacity:.7,depthWrite:false,blending:THREE.AdditiveBlending}));s.scale.set(.9,.9,1);s.position.set(wx,1.0,wz);areaRoot.add(s);e.glow=s}}
+}
+function refreshEnts(){for(const e of ents){const v=e.show?e.show():true;e.vis=v;if(e.obj)e.obj.visible=v;if(e.glow)e.glow.visible=v&&!(e.done&&e.done())}}
+// props
+const PROP={
+  socket:()=>{const g=new THREE.Group();g.add(mk(rbox(.5,.75,.5,.04),M('#7c7873'),[0,.375,0]));g.add(mk(new THREE.CylinderGeometry(.03,.03,.36,8),M('#2e2622'),[0,.95,0],[0,0,.9]));
+    g.add(mk(new THREE.TorusGeometry(.09,.025,6,12,Math.PI),M('#2e2622'),[.14,1.06,0],[0,0,.9]));return ink(g,.02)},
+  bench:()=>ink(mk(rbox(.9,.4,.4,.04),M('#7e7a74'),[0,.2,0]),.02),
+  table:()=>{const g=new THREE.Group();g.add(mk(rbox(.9,.08,.6,.02),M('#2e2622'),[0,.62,0]));for(const s of[-1,1])g.add(mk(rbox(.08,.6,.5,.02),M('#2e2622'),[s*.38,.3,0]));return ink(g,.02)},
+  chair:(lbl)=>{const g=new THREE.Group(),c=M(lbl==='sixth'?'#2a2420':'#5e4a36');g.add(mk(rbox(.42,.06,.42,.02),c,[0,.42,0]));g.add(mk(rbox(.42,.5,.06,.02),c,[0,.68,-.18]));
+    for(const a of[-1,1])for(const b of[-1,1])g.add(mk(new THREE.CylinderGeometry(.025,.025,.42,6),c,[a*.17,.21,b*.17]));return ink(g,.016)},
+  tent:(col)=>{const g=new THREE.Group();g.add(mk(new THREE.ConeGeometry(.9,1.3,6),M(col||'#d8cfb8'),[0,.65,0]));g.add(mk(new THREE.CylinderGeometry(.02,.02,1.6,6),M('#4a3b2a'),[0,.8,0]));return g},
+  desk:()=>{const g=new THREE.Group();g.add(mk(rbox(1.3,.08,.6,.02),M('#7a5a3a'),[0,.72,0]));g.add(mk(rbox(1.2,.66,.5,.02),M('#5f442b'),[0,.34,0]));
+    for(let k=0;k<4;k++)g.add(mk(rbox(.18,.04+k*.01,.24,.01),M(k%2?'#efe6cf':'#d9cfb3'),[-.4+k*.22,.79+k*.02,0]));return ink(g,.02)},
+  marker:()=>{const g=new THREE.Group();g.add(mk(rbox(.4,1,.25,.05),M('#8d8a86'),[0,.5,0]));return ink(g,.02)},
+  campfire:()=>{const g=new THREE.Group();for(let k=0;k<5;k++)g.add(mk(new THREE.CylinderGeometry(.04,.04,.55,6),M('#3a2a1e'),[Math.cos(k*1.25)*.12,.08,Math.sin(k*1.25)*.12],[Math.PI/2,k*1.25,0]));
+    const f=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:'#ffae4a',transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));f.scale.set(1.2,1.4,1);f.position.y=.45;g.add(f);
+    g.add(mk(new THREE.ConeGeometry(.12,.35,7),new THREE.MeshBasicMaterial({color:'#ffc86b'}),[0,.25,0],[0,0,0],false));return ink(g,.015)},
+  shelter:()=>{const g=new THREE.Group();g.add(mk(rbox(2.6,1.3,2.4,.04),M('#8a8478'),[0,.65,0]));g.add(mk(new THREE.BoxGeometry(2.9,.12,2.7),M('#5a4a3a'),[0,1.36,0]));
+    g.add(mk(rbox(.6,.95,.06,.02),M('#2a2420'),[0,.48,1.21]));for(const s of[-1,1])for(const t of[-1,1])g.add(mk(new THREE.CylinderGeometry(.05,.05,1.4,8),M('#3a2e24'),[s*1.32,.7,t*1.22]));return ink(g,.025)},
+  gateLeaves:()=>{const g=new THREE.Group(),dw=M('#2c231d'),br=M('#a8854a');for(const s of[-1,1]){const l=new THREE.Group();l.position.set(s*1,0,0);l.rotation.y=s*-1.15;
+      l.add(mk(rbox(.95,1.35,.08,.02),dw,[-s*.48,.68,0]));for(const yy of[.3,1.05])l.add(mk(new THREE.CylinderGeometry(.04,.04,.14,8),br,[0,yy,0]));g.add(l)}
+    return ink(g,.02)},
+  lamp:()=>{const g=new THREE.Group();g.add(mk(new THREE.CylinderGeometry(.06,.1,.18,10),M('#a8854a'),[0,.09,0]));g.add(mk(new THREE.SphereGeometry(.07,10,8),M('#c39b57'),[0,.2,0]));return ink(g,.012)},
+};
+function npc(house,o){return()=>{const f=figure(house,o);return f}}
+
+// ---- area loading ----
+async function loadArea(id,spawn,face){
+  A=AREAS[id];G.area=id;if(areaRoot)world.remove(areaRoot);areaRoot=new THREE.Group();world.add(areaRoot);
+  grid=A.grid();ents=A.ents().map(ent);buildTerrain(A.style);for(const e of ents)placeEnt(e);refreshEnts();
+  const sp=spawn||A.spawn;P.x=sp[0];P.y=sp[1];const[wx,wz]=tw(P.x,P.y);P.fx=wx;P.fz=wz;P.path=[];P.moving=false;P.pending=null;P.face=face??Math.PI;
+  if(player)world.remove(player);player=figure(G.house,{skin:G.look.skin,hair:G.look.hair});player.position.set(wx,0,wz);player.rotation.y=P.face;world.add(player);
+  trail=[];buildFollowers();camT.set(wx,0,wz);
+  const ext=Math.max(grid.w,grid.h);sun.position.set(wx+8,16,wz+6);sun.target.position.set(wx,0,wz);const sc=sun.shadow.camera;sc.left=-14;sc.right=14;sc.top=14;sc.bottom=-14;sc.far=60;sc.updateProjectionMatrix();
+  $('dim').style.opacity=0;setSky(A.sky||'day');
+  mode='explore';renderHud();updateObjective();G.pos=[P.x,P.y];save();
+}
+async function go(id,spawn,face){await fade(()=>loadArea(id,spawn,face));if(A.enter)await busy(A.enter);refreshEnts();updateObjective();renderHud();save()}
+function buildFollowers(){if(!areaRoot)return;for(const f of followers)world.remove(f.obj);followers=[];
+  G.party.slice(1).forEach((m,i)=>{const o=figure(m.house,FOLLOWER_LOOK[m.id]||{});const[wx,wz]=tw(P.x,P.y+1+i);o.position.set(wx,0,wz);world.add(o);followers.push({m,obj:o,last:o.position.clone()})})}
+const FOLLOWER_LOOK={nim:{skin:'#e4b996',cloak:'#3f3046',tunic:'#55603a'},oda:{skin:'#c79670',hair:'#2a1c14',hood:false,tunic:'#5b6e7c'}};
+function setSky(k){const s=$('game').style;if(k==='dusk'){s.setProperty('--sky2','#a7745a');s.setProperty('--sky1','#1d1a24')}else{s.setProperty('--sky2','#c9a967');s.setProperty('--sky1','#2c2a31')}}
+
+// ---- pathfinding ----
+function findPath(sx,sy,tx,ty){if(solidAt(tx,ty))return null;const key=(x,y)=>y*grid.w+x,prev=new Map([[key(sx,sy),null]]),q=[[sx,sy]];
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  while(q.length){const[x,y]=q.shift();if(x===tx&&y===ty){const p=[];let k=key(x,y);while(k!=null){p.unshift([k%grid.w,Math.floor(k/grid.w)]);k=prev.get(k)}p.shift();return p}
+    for(const[dx,dy]of dirs){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=grid.w||ny>=grid.h)continue;const k=key(nx,ny);if(prev.has(k)||solidAt(nx,ny))continue;if(dx&&dy&&(solidAt(x+dx,y)||solidAt(x,y+dy)))continue;prev.set(k,key(x,y));q.push([nx,ny])}}
+  return null}
+function entNear(maxd=1.6){let best=null,bd=maxd;for(const e of ents){if(!e.vis||!e.act||(e.done&&e.done()))continue;for(const[tx,ty]of e.tiles){const d=Math.hypot(tx-P.x,ty-P.y);if(d<bd){bd=d;best=e}}}return best}
+function goTo(tx,ty,interact){
+  if(interact){let best=null,bd=1e9;for(const[ex,ey]of interact.tiles)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=ex+dx,ny=ey+dy;if(solidAt(nx,ny))continue;const d=Math.hypot(nx-P.x,ny-P.y);if(d<bd){bd=d;best=[nx,ny]}}
+    if(!best)return;if(best[0]===P.x&&best[1]===P.y){runEnt(interact);return}const p=findPath(P.x,P.y,best[0],best[1]);if(p){P.path=p;P.pending=interact}return}
+  const p=findPath(P.x,P.y,tx,ty);if(p){P.path=p;P.pending=null}}
+async function runEnt(e){if(locked())return;P.path=[];P.pending=null;const t=e.tiles[0];const[wx,wz]=tw(t[0],t[1]);player.rotation.y=Math.atan2(wx-player.position.x,wz-player.position.z);
+  if(e.obj&&e.npc)e.obj.rotation.y=Math.atan2(player.position.x-e.obj.position.x,player.position.z-e.obj.position.z);
+  await busy(()=>e.act(e));refreshEnts();updateObjective();renderHud();save()}
+
+// ---- explore update ----
+function updateExplore(dt,t){
+  if(!player)return;
+  if(!locked()&&P.path.length){const[nx,ny]=P.path[0];const[wx,wz]=tw(nx,ny);const dx=wx-P.fx,dz=wz-P.fz,d=Math.hypot(dx,dz),sp=3.4*dt;
+    if(d<=sp){P.fx=wx;P.fz=wz;P.x=nx;P.y=ny;P.path.shift();onStep()}else{P.fx+=dx/d*sp;P.fz+=dz/d*sp;P.face=Math.atan2(dx,dz)}P.moving=true}
+  else P.moving=false;
+  if(!locked()&&!P.path.length&&P.pending){const e=P.pending;P.pending=null;runEnt(e)}
+  player.position.set(P.fx,0,P.fz);let df=P.face-player.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));player.rotation.y+=df*Math.min(1,dt*12);animFig(player,t,P.moving);
+  if(P.moving){const last=trail[0];if(!last||last.distanceTo(player.position)>.12)trail.unshift(player.position.clone());if(trail.length>60)trail.pop()}
+  followers.forEach((f,i)=>{const tp=trail[Math.min(trail.length-1,(i+1)*7)];if(tp){const d=tp.clone().sub(f.obj.position);const mv=d.length()>.05;if(mv){f.obj.position.lerp(tp,Math.min(1,dt*6));f.obj.rotation.y=Math.atan2(d.x,d.z)}animFig(f.obj,t+i,mv&&P.moving)}else animFig(f.obj,t+i,false)});
+  for(const e of ents)if(e.obj&&e.vis&&e.anim)e.anim(e.obj,t);else if(e.obj&&e.npc)animFig(e.obj,t,false);
+  for(const e of ents)if(e.glow)e.glow.material.opacity=.45+.3*Math.sin(t*3+e.x);
+  if(waterTex)waterTex.offset.y=(waterTex.offset.y+dt*.5)%1;
+  camT.lerp(player.position,Math.min(1,dt*5));fitCam(camT);
+  sun.position.set(camT.x+8,16,camT.z+6);sun.target.position.copy(camT);
+  if(A.update)A.update(dt,t);
+  const n=!locked()&&entNear();const pr=$('prompt');if(n&&!P.path.length){pr.hidden=false;pr.textContent=`${matchMedia('(pointer:coarse)').matches?'Tap':'E'} · ${n.label}`}else pr.hidden=true;
+}
+function fitCam(target){const w=cv.clientWidth,hh=cv.clientHeight,asp=w/hh,half=w<600?4.6:6.2;
+  ocam.left=-half*asp;ocam.right=half*asp;ocam.top=half;ocam.bottom=-half;ocam.near=.1;ocam.far=200;ocam.updateProjectionMatrix();
+  ocam.position.copy(target).addScaledVector(ISO,40);ocam.lookAt(target)}
+async function onStep(){G.pos=[P.x,P.y];
+  if(tile(P.x,P.y)==='x'&&A.exit){P.path=[];await busy(()=>A.exit(P.x,P.y));return}
+  for(const tr of (A.triggers||[])){if(tr.when()&&!(G.flags[tr.flag])){const[x0,y0,x1,y1]=tr.rect;if(P.x>=x0&&P.x<=x1&&P.y>=y0&&P.y<=y1){P.path=[];P.pending=null;G.flags[tr.flag]=1;await busy(tr.run);refreshEnts();updateObjective();renderHud();save();break}}}}
+
+// ---- input ----
+const ray=new THREE.Raycaster(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+cv.addEventListener('pointerdown',e=>{
+  if(mode==='battle'){battleClick(e);return}
+  if(mode!=='explore'||locked())return;
+  const r=cv.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-((e.clientY-r.top)/r.height)*2+1},ocam);
+  const hit=new THREE.Vector3();if(!ray.ray.intersectPlane(groundPlane,hit))return;
+  // prefer entities whose model the ray passes near
+  let best=null,bd=.9;for(const e of ents){if(!e.vis||!e.act||(e.done&&e.done())||!e.obj)continue;const p=e.obj.position.clone();p.y=.7;const d=ray.ray.distanceToPoint(p);const lim=e.w?Math.max(e.w,e.hh||1)*.6:.75;if(d<lim&&d<bd+.3){bd=d;best=e}}
+  if(best){goTo(0,0,best);return}
+  const tx=Math.round(hit.x+grid.w/2-.5),ty=Math.round(hit.z+grid.h/2-.5);goTo(tx,ty)});
+const keys={};
+addEventListener('keydown',e=>{
+  if(!$('menu').hidden&&e.key==='Escape'){closeMenu();return}
+  if(dlgKey(e))return;
+  if(mode==='explore'&&!locked()){
+    if(e.key==='Escape'){openMenu();return}
+    if(e.key==='e'||e.key==='E'||e.key===' '||e.key==='Enter'){const n=entNear();if(n){e.preventDefault();runEnt(n)}return}
+    const d={ArrowUp:[-1,-1],w:[-1,-1],W:[-1,-1],ArrowDown:[1,1],s:[1,1],S:[1,1],ArrowLeft:[-1,1],a:[-1,1],A:[-1,1],ArrowRight:[1,-1],d:[1,-1],D:[1,-1]}[e.key];
+    if(d){e.preventDefault();const[dx,dy]=d;// screen-relative: up = toward -x-y in iso
+      const mx=Math.sign(dx),my=Math.sign(dy);const opts=[[P.x+mx,P.y+my],[P.x+mx,P.y],[P.x,P.y+my]];for(const[nx,ny]of opts)if(!solidAt(nx,ny)&&!(nx!==P.x&&ny!==P.y&&(solidAt(nx,P.y)||solidAt(P.x,ny)))){if(!P.path.length){P.path=[[nx,ny]];P.pending=null}break}}
+  }
+  if(mode==='battle'&&battleKey(e))e.preventDefault();
+});
+
+// =====================================================================
+// DIALOGUE
+// =====================================================================
+const SPK={aud:{n:'Commissioner Aud Verrel',h:'saldric'},pell:{n:'Clerk Pell',h:'saldric'},nim:{n:'Keeper Nim Sixth-Road',h:'mirrowen'},oda:{n:'Oda Thaw',h:'ikorran'},
+  sellim:{n:'Sellim Ninth-Hand',h:'undrum'},runner:{n:'Bond-broker',h:'saldric'},anchor:{n:'Anchor-man',h:'undrum'},log:{n:'Gate log — Tarrow’s detail',h:null},narr:{n:'',h:null}};
+let dlgRes=null,typing=null;
+function spk(id){return id==='you'?{n:G.name,h:G.house}:SPK[id]}
+function say(who,text){return new Promise(res=>{const s=spk(who),d=$('dlg');d.hidden=false;$('prompt').hidden=true;$('dCh').replaceChildren();$('dMore').hidden=true;
+  const por=$('dPor');por.replaceWith(Object.assign(sig(s.h),{id:'dPor'}));if(!s.h)$('dPor').style.visibility='hidden';
+  $('dName').textContent=s.n;const tx=$('dText');tx.className=who==='narr'?'narr':'';tx.innerHTML='';
+  const parts=String(text).split(/(\[\[socket\]\])/);let full=parts.map(p=>p==='[[socket]]'?'<span class="sock">____</span>':esc(p)).join('');
+  let i=0;const plain=String(text).replace(/\[\[socket\]\]/g,'█');clearInterval(typing);
+  typing=setInterval(()=>{i+=2;if(i>=plain.length){clearInterval(typing);typing=null;tx.innerHTML=full;$('dMore').hidden=false}else tx.textContent=plain.slice(0,i).replace(/█/g,'    ')},16);
+  dlgRes=()=>{if(typing){clearInterval(typing);typing=null;tx.innerHTML=full;$('dMore').hidden=false;return}dlgRes=null;res()}})}
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function choose(opts){return new Promise(res=>{const c=$('dCh');$('dMore').hidden=true;c.replaceChildren(...opts.map((o,i)=>h('button',{onclick:ev=>{ev.stopPropagation();c.replaceChildren();dlgRes=null;res(i)}},`${i+1}. ${o}`)));
+  dlgRes='choice';setTimeout(()=>c.firstChild&&c.firstChild.focus(),50)})}
+function endDlg(){$('dlg').hidden=true;dlgRes=null}
+$('dlg').addEventListener('click',()=>{if(typeof dlgRes==='function')dlgRes()});
+function dlgKey(e){if($('dlg').hidden)return false;if(dlgRes==='choice'){const n=parseInt(e.key);if(n>0){const b=$('dCh').children[n-1];if(b){b.click();return true}}return false}
+  if(typeof dlgRes==='function'&&(e.key==='Enter'||e.key===' '||e.key==='e'||e.key==='E')){e.preventDefault();dlgRes();return true}return true}
+async function talk(lines){for(const[w,t]of lines)await say(w,t);endDlg()}
+function card(title,text,sub='Tap to continue'){return new Promise(res=>{const c=$('card');c.hidden=false;c.replaceChildren(h('h2',{},title),text?h('p',{},text):null,h('small',{},sub));
+  const go=()=>{c.hidden=true;c.onclick=null;removeEventListener('keydown',k);res()};const k=e=>{if(e.key==='Enter'||e.key===' '||e.key==='Escape'){e.preventDefault();go()}};c.onclick=go;setTimeout(()=>addEventListener('keydown',k),200)})}
+async function fade(fn){const f=$('fade');f.style.pointerEvents='auto';f.style.opacity=1;await sleep(500);await fn();f.style.opacity=0;await sleep(450);f.style.pointerEvents='none'}
+
+// =====================================================================
+// HUD & MENU
+// =====================================================================
+function renderHud(){if(!G)return;const hud=$('hud');hud.hidden=mode!=='explore';$('topr').hidden=mode!=='explore';$('obj').hidden=mode!=='explore'||!G.obj;
+  hud.replaceChildren(...G.party.map(m=>{const s=mstats(m);return h('div',{class:'pm'},sig(m.house),h('div',{},h('div',{class:'nm'},m.name),h('small',{},`Lv ${m.lvl} · ${HOUSES[m.house].title} · ${m.hp}/${s.maxhp}`),h('div',{class:'hpb'},h('i',{style:`width:${m.hp/s.maxhp*100}%`}))))}));
+  updateClock()}
+function updateClock(){const c=$('clock');if(!G)return;if(G.area==='ring'){const p=Math.min(100,Math.round(G.clock*100));c.textContent=G.flags.sleepless?'Dark · nobody sleeps here':`Dimming ${p}% · leave before dark`}
+  else if(G.area==='road'||G.area==='gate')c.textContent=`Sixth Road · Day ${G.day}`;else c.textContent='Second Road waystation'}
+function updateObjective(){const o=$('obj');if(!G)return;const t=OBJ();G.obj=t;o.hidden=mode!=='explore'||!t;if(t)o.replaceChildren(h('b',{},'Objective'),t)}
+function OBJ(){const f=G.flags;if(!f.metAud)return'Speak with Commissioner Verrel.';if(G.area==='waystation')return'Take the north gate into the Concord Ring.';
+  if(G.area==='ring'){if(!f.odaJoined)return`Find what the commotion is in the south-east court. Optional: catalogue socket objects (${G.sockets||0}/3).`;return'Leave by the Sixth Avenue, west of the central plaza, before dark.'}
+  if(G.area==='road')return'Walk the Sixth Road to the gate.';if(G.area==='gate'){if(!f.sellimDone)return'Reach the shelter by the gate.';if(!f.readLog)return'Search the shelter for the gate log.';return'Examine the gate.'}return''}
+let mTab='party';
+function openMenu(){if(!G||mode!=='explore'||locked())return;$('menu').hidden=false;renderMenu()}
+function closeMenu(){$('menu').hidden=true}
+$('menuBtn').onclick=openMenu;$('mClose').onclick=closeMenu;
+function renderMenu(){const nav=$('mNav'),b=$('mBody');nav.replaceChildren(...[['party','Party'],['items','Items'],['journal','Journal'],['game','Game']].map(([k,l])=>h('button',{class:mTab===k?'on':'',onclick:()=>{mTab=k;renderMenu()}},l)));
+  if(mTab==='party')b.replaceChildren(...G.party.map(m=>{const s=mstats(m),H=HOUSES[m.house];return h('div',{class:'mcard'},h('h4',{},`${m.name} — ${H.name} ${H.title}, level ${m.lvl}`),
+    h('div',{class:'mute'},`HP ${m.hp}/${s.maxhp} · Attack ${s.atk} · Defense ${s.def} · Speed ${s.spd} · XP ${m.xp}${m.lvl<LV.length?' / '+LV[m.lvl]:''}`),
+    ...H.abil.map(a=>h('div',{class:'ab'},h('b',{},AB[a].n),AB[a].cost?` (${AB[a].cost} Focus)`:'',AB[a].lvl&&m.lvl<AB[a].lvl?` — unlocks at level ${AB[a].lvl}`:'',' — ',AB[a].d)))}));
+  if(mTab==='items'){b.replaceChildren(h('div',{class:'mcard'},h('h4',{},`Witness-salt: ${G.salt}`),h('div',{class:'mute'},'The Shelf’s trade currency. Earned from the commission and from fallen foes.')),
+    ...Object.entries(ITEMS).map(([k,it])=>h('div',{class:'mcard'},h('h4',{},`${it.n} × ${G.items[k]||0}`),h('div',{class:'mute'},it.d),
+      k==='draught'&&G.items[k]?h('div',{style:'margin-top:6px;display:flex;gap:6px;flex-wrap:wrap'},G.party.map(m=>h('button',{onclick:()=>{const s=mstats(m);if(m.hp>=s.maxhp)return;m.hp=Math.min(s.maxhp,m.hp+Math.ceil(s.maxhp*.5));G.items.draught--;renderHud();renderMenu()}},`Use on ${m.name}`))):null)))}
+  if(mTab==='journal')b.replaceChildren(...(G.journal.length?G.journal.slice().reverse().map(j=>h('div',{class:'mcard'},h('h4',{},j.title),h('div',{},j.body))):[h('div',{class:'mute'},'Nothing yet.')]));
+  if(mTab==='game')b.replaceChildren(h('div',{class:'mcard'},h('h4',{},'Progress saves automatically'),h('div',{class:'mute'},'The game saves whenever you change area, finish a battle or finish a conversation, in this browser only.'),
+    h('div',{style:'margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'},h('button',{onclick:()=>{save();toast('Saved.')}},'Save now'),h('button',{onclick:ev=>{const bt=ev.currentTarget;if(!bt.dataset.arm){bt.dataset.arm=1;bt.textContent='Tap again to quit to title';return}closeMenu();toTitle()}},'Quit to title'))))}
+
+// =====================================================================
+// BATTLE
+// =====================================================================
+const bScene=new THREE.Scene();
+bScene.add(new THREE.HemisphereLight('#e9d9b8','#3b342c',.6));
+const bSun=new THREE.DirectionalLight('#ffe9c2',.65);bSun.position.set(4,10,6);bSun.castShadow=true;bSun.shadow.mapSize.set(1024,1024);const bsc=bSun.shadow.camera;bsc.left=-8;bsc.right=8;bsc.top=8;bsc.bottom=-8;bScene.add(bSun);
+const bCam=new THREE.OrthographicCamera(-5,5,5,-5,.1,100);
+let B=null;
+function bFit(){const w=cv.clientWidth,hh=cv.clientHeight,asp=w/hh;let half=asp<1?6.4/asp*.62:3.6;half=Math.max(half,3.4);ocamSet(bCam,half,asp);bCam.position.set(0,7,11);bCam.lookAt(0,asp<1?1.2:.9,0)}
+function ocamSet(c,half,asp){c.left=-half*asp;c.right=half*asp;c.top=half;c.bottom=-half;c.updateProjectionMatrix()}
+function arena(style){const g=new THREE.Group(),tx={ring:TX.stone,compound:TX.salt,road:TX.scrub,gate:TX.scrub}[style]||TX.scrub;const t=tx.clone();t.needsUpdate=true;t.repeat.set(3,3);
+  g.add(mk(new THREE.CylinderGeometry(7.5,7.8,.4,48),M('#ffffff',{map:t}),[0,-.2,0],[0,0,0],false));
+  if(style==='ring'){for(let k=0;k<7;k++){const a=-2.2+k*.73;g.add(mk(GEO.box,M('#8d8a86'),[Math.cos(a)*6.4,1.2,Math.sin(a)*6.4-1]).translateY(0));g.children[g.children.length-1].scale.set(1.6,2.4,1.2)}}
+  else{const rng=seeded(42);for(let k=0;k<9;k++){const a=-2.6+k*.6;const s=mk(new THREE.DodecahedronGeometry(.4+rng()*.4,0),M('#7a7468'),[Math.cos(a)*(5.6+rng()),.2,Math.sin(a)*(5+rng())-1.2],[rng(),rng(),rng()]);g.add(s)}
+    if(style==='gate'){const w=mk(GEO.box,M('#ffffff',{map:TX.stone}),[0,.9,-4.6]);w.scale.set(9,1.8,.6);g.add(w)}}
+  return ink(g,.03)}
+function mkUnit(side,o){return{side,...o,st:{},focus:side==='party'?2:0,alive:true}}
+async function battle(list,opts={}){
+  return busy(async()=>{
+    mode='battle';renderHud();$('prompt').hidden=true;$('obj').hidden=true;
+    while(bScene.children.length>2)bScene.remove(bScene.children[2]);
+    bScene.add(arena(opts.style||A.style));
+    const snap=G.party.map(m=>m.hp);
+    const party=G.party.filter(m=>m.hp>0).map((m,i)=>{const s=mstats(m);const look=m.id==='you'?{skin:G.look.skin,hair:G.look.hair}:FOLLOWER_LOOK[m.id]||{};
+      return mkUnit('party',{m,name:m.name,house:m.house,hp:m.hp,maxhp:s.maxhp,atk:Math.round(s.atk*(G.flags.sleepless&&G.area==='ring'?.85:1)),def:s.def,spd:s.spd,abil:HOUSES[m.house].abil.filter(a=>!AB[a].lvl||m.lvl>=AB[a].lvl),model:figure(m.house,look)})});
+    const foes=list.map(k=>{const E=ENEMY[k];return mkUnit('enemy',{key:k,E,name:E.n,hp:E.hp,maxhp:E.hp,atk:E.atk,def:E.def,spd:E.spd,model:enemyModel(k),turnN:0})});
+    // dedupe names
+    const cnt={};for(const f of foes){cnt[f.name]=(cnt[f.name]||0)+1}const idx={};for(const f of foes)if(cnt[f.name]>1){idx[f.name]=(idx[f.name]||0)+1;f.name+=` ${'ABC'[idx[f.name]-1]}`}
+    const posP=[[-2.6,0,.2],[-3.3,0,-1.5],[-3.3,0,1.9]],posE=[[2.6,0,.2],[3.3,0,-1.5],[3.3,0,1.9]];
+    party.forEach((u,i)=>{u.home=new THREE.Vector3(...posP[i]);u.model.position.copy(u.home);u.model.rotation.y=Math.PI/2;bScene.add(u.model)});
+    foes.forEach((u,i)=>{u.home=new THREE.Vector3(...posE[i]);u.model.position.copy(u.home);u.model.rotation.y=u.E.kind==='hound'||u.E.kind==='swine'?Math.PI:-Math.PI/2;bScene.add(u.model)});
+    B={party,foes,all:[...party,...foes],round:0,cur:null,pick:null,res:null,style:opts.style||A.style};
+    for(const u of B.all){u.tag=h('div',{class:'tag '+(u.side==='party'?'p':'e')},h('div',{class:'n'},u.name),h('div',{class:'hp'},h('i')),h('div',{class:'s'}));u.tag.addEventListener('click',()=>{if(B.pick)B.pick(u)});$('fx').append(u.tag)}
+    $('bTop').hidden=false;bFit();
+    if(opts.intro)log(opts.intro);
+    let result=null;
+    while(!result){B.round++;
+      const order=B.all.filter(u=>u.alive).sort((a,b)=>okey(a)-okey(b));for(const u of order){u.st.first=0}
+      renderOrder(order);
+      for(const u of order){if(!u.alive)continue;if(endCheck())break;B.cur=u;renderOrder(order);await turn(u);updTags();if(endCheck())break}
+      result=endCheck()}
+    B.cur=null;$('bPanel').hidden=true;
+    if(result==='win'){
+      const xp=foes.reduce((s,f)=>s+f.E.xp,0),salt=foes.reduce((s,f)=>s+f.E.salt,0);log(`Victory. +${xp} XP · +${salt} salt`);await sleep(900);
+      party.forEach(u=>{u.m.hp=Math.max(1,u.hp)});G.party.forEach(m=>{if(!party.find(u=>u.m===m))m.hp=Math.max(1,m.hp)});
+      G.salt+=salt;for(const m of G.party)gainXP(m,xp);
+    }
+    cleanupBattle();
+    if(result==='lose'){mode='battle';const again=await defeat();G.party.forEach((m,i)=>m.hp=Math.max(snap[i],Math.ceil(mstats(m).maxhp*.6)));if(again){lockN--;try{return await battle(list,opts)}finally{lockN++}}}
+    mode='explore';renderHud();save();return result});
+}
+function okey(u){let k=-u.spd;if(u.st.heavy)k+=100;if(u.st.last)k+=200;if(u.st.green)k-=300;if(u.st.first)k-=500;return k+Math.random()*.1}
+function endCheck(){if(!B.foes.some(u=>u.alive))return'win';if(!B.party.some(u=>u.alive))return'lose';return null}
+function cleanupBattle(){for(const u of B.all)u.tag.remove();$('bTop').hidden=true;$('bPanel').hidden=true;$('fx').querySelectorAll('.num').forEach(n=>n.remove())}
+function defeat(){return new Promise(res=>{const c=$('card');c.hidden=false;c.onclick=null;c.replaceChildren(h('h2',{},'The party has fallen'),h('p',{},'On the Shelf, even this is written down somewhere.'),
+  h('div',{style:'margin-top:20px;display:flex;gap:10px'},h('button',{class:'gold',onclick:()=>{c.hidden=true;res(true)}},'Try the fight again')))})}
+function log(t){$('blog').textContent=t}
+function renderOrder(order){$('order').replaceChildren(...order.filter(u=>u.alive).map(u=>h('span',{class:(u.side==='party'?'p':'e')+(u===B.cur?' cur':'')},u.name)))}
+function stText(u){const s=u.st,o=[];if(s.rot)o.push(`Rot ${s.rot}`);if(s.bond)o.push(`Bond ${s.bond}`);if(s.load)o.push(`Load ${s.load}`);if(s.regard)o.push(`Regard ${s.regard}`);if(s.heavy)o.push('Heavy');if(s.light)o.push('Light');
+  if(s.set)o.push('Set');if(s.stare)o.push('Staring');if(s.stay)o.push('Stayed');if(s.evade)o.push('Evading');if(s.unreg)o.push('Unregarded');if(s.guard)o.push('Shouldered');if(s.last)o.push('Stretched');if(s.green)o.push('Long Green');if(s.defend)o.push('Guarding');if(s.charging)o.push('⚠ Shouldering the shelter');return o.join(' · ')}
+function updTags(){if(!B)return;for(const u of B.all){u.tag.querySelector('i').style.width=`${Math.max(0,u.hp/u.maxhp*100)}%`;u.tag.querySelector('.s').textContent=u.alive?stText(u):'Down';u.tag.classList.toggle('cur',u===B.cur);u.tag.style.opacity=u.alive?1:.5}}
+function posTags(){if(!B)return;const w=cv.clientWidth,hh=cv.clientHeight;for(const u of B.all){const p=u.model.position.clone();p.y+=u.E&&u.E.kind==='swine'?1.95:u.E&&u.E.kind==='hound'?1.35:2.15;p.project(bCam);u.tag.style.left=((p.x+1)/2*w)+'px';u.tag.style.top=((1-p.y)/2*hh)+'px'}}
+function num(u,txt,col){const p=u.model.position.clone();p.y+=1.1;p.project(bCam);const e=h('div',{class:'num',style:`left:${(p.x+1)/2*cv.clientWidth}px;top:${(1-p.y)/2*cv.clientHeight}px;color:${col}`},txt);$('fx').append(e);
+  const t0=performance.now();(function f(){const k=(performance.now()-t0)/1000;e.style.transform=`translate(-50%,${-50-k*60}%)`;e.style.opacity=Math.min(1,2.4-k*2);if(k<1.2)requestAnimationFrame(f);else e.remove()})()}
+function tween(dur,fn){return new Promise(r=>{const t0=performance.now();(function f(){const k=Math.min(1,(performance.now()-t0)/dur);fn(k);if(k<1)requestAnimationFrame(f);else r()})()})}
+async function lunge(u,t){const a=u.home.clone(),b=t.model.position.clone();const mid=a.clone().lerp(b,.55);await tween(200,k=>u.model.position.lerpVectors(a,mid,k*k));await tween(220,k=>u.model.position.lerpVectors(mid,a,k))}
+async function cast(u,col){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:col,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));s.position.copy(u.model.position);s.position.y=1;bScene.add(s);
+  const arm=u.model.userData.arms&&u.model.userData.arms[1];await tween(380,k=>{s.scale.setScalar(.5+k*2.2);s.material.opacity=1-k;if(arm)arm.rotation.x=-Math.sin(k*Math.PI)*2});bScene.remove(s)}
+async function spark(t,col){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow,color:col,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));s.position.copy(t.model.position);s.position.y=.9;bScene.add(s);await tween(300,k=>{s.scale.setScalar(.3+k*1.6);s.material.opacity=1-k});bScene.remove(s)}
+function shake(t){const b=t.home.clone();tween(260,k=>{t.model.position.x=b.x+Math.sin(k*30)*.08*(1-k)})}
+function calc(u,t,mult,o={}){let d=u.atk*mult*(.9+Math.random()*.2);if(u.st.green)d*=1.6;if(!o.pierce)d-=t.def*.6;d=Math.max(1,d);if(t.st.light)d*=1.5;if(t.st.defend)d*=.5;if(u.st.weak&&!o.noweak){d*=.5;u.st.weak=0}return Math.round(d)}
+function damage(t,d,kind='hit',col='#ffd6c2'){if(!t.alive)return 0;
+  if(kind==='hit'&&t.st.evade){t.st.evade=0;num(t,'Evaded','#a8d4ff');return 0}
+  if(kind==='hit'&&t.st.guard&&t.st.guard.by.alive&&t.st.guard.by!==t){const g=t.st.guard.by,half=Math.round(d/2);d-=half;hurt(g,half,'#ffd6c2');g.st.load=(g.st.load||0)+1}
+  return hurt(t,d,col)}
+function hurt(t,d,col){if(t.st.stay&&t.hp-d<1)d=Math.max(0,t.hp-1);t.hp=Math.max(0,t.hp-d);num(t,d?`-${d}`:'0',col);shake(t);
+  if(t.hp<=0&&t.alive){t.alive=false;const m=t.model;const r0=m.rotation.z;tween(500,k=>{m.rotation.z=r0+(t.side==='party'?1:-1)*k*1.4;m.position.y=-k*.2})}updTags();return d}
+function heal(t,a){a=Math.round(Math.min(a,t.maxhp-t.hp));t.hp+=a;num(t,`+${a}`,'#a8e08a');updTags()}
+function addSt(t,k,v){t.st[k]=(t.st[k]||0)+v}
+async function turn(u){
+  // start of turn
+  if(u.st.defend)u.st.defend=0;if(u.st.light)u.st.light=0;if(u.st.unreg)u.st.unreg=0;
+  if(u.st.rot&&!u.st.stay){const d=u.st.rot*3;log(`${u.name} rots.`);hurt(u,d,'#b7d36a');u.st.rot--;await sleep(450)}
+  if(u.st.bond&&u.alive){hurt(u,u.st.bond*2,'#e8e2cf');log(`${u.name}'s bond tugs.`);await sleep(400)}
+  if(u.st.debt&&u.alive){u.st.debt.n--;if(u.st.debt.n<=0){hurt(u,u.st.debt.a,'#c9a7ff');log(`${u.name}'s fatigue comes due.`);u.st.debt=null;await sleep(400)}}
+  for(const k of['heavy','stay','green','last']){if(u.st[k]){u.st[k]--}}
+  if(u.st.guard){u.st.guard.t--;if(u.st.guard.t<=0)u.st.guard=null}
+  updTags();if(!u.alive)return;
+  if(u.side==='party')u.focus=Math.min(6,u.focus+1);
+  if(u.st.set){u.st.set=0;if(u.st.charging){u.st.charging=0;log(`${u.name} is Set. The charge is broken.`)}else log(`${u.name} is Set and cannot move.`);num(u,'Set','#e8c27c');await sleep(800);return}
+  if(u.st.stare){u.st.stare=0;if(u.st.charging){u.st.charging=0;log(`${u.name} stares at nothing. The charge is broken.`)}else log(`${u.name} stares at nothing.`);num(u,'Staring','#f3dca0');await sleep(800);return}
+  if(u.side==='party')await playerTurn(u);else await enemyTurn(u)}
+// ---- player turn ----
+function playerTurn(u){return new Promise(res=>{B.res=res;showActs(u)})}
+function pips(n){return h('div',{class:'pips'},Array.from({length:6},(_,i)=>h('i',{class:i<n?'f':''})))}
+function showActs(u){const pnl=$('bPanel');pnl.hidden=false;$('bWho').replaceChildren(sig(u.house),h('span',{class:'nm'},u.name),pips(u.focus),h('span',{class:'mute'},`${u.focus} Focus`));
+  const acts=$('bActs'),desc=$('bDesc');desc.textContent='Choose an action. Abilities cost Focus; you regain 1 Focus each turn.';
+  const btn=(label,sub,dsc,dis,fn)=>{const b=h('button',{disabled:dis,onclick:fn,onmouseenter:()=>desc.textContent=dsc,onfocus:()=>desc.textContent=dsc},label,h('small',{},sub));return b};
+  const list=u.abil.map(a=>{const ab=AB[a];let dis=u.focus<ab.cost;if(a==='overburden'&&!u.st.load)dis=true;if(a==='persist'&&(u.st.regard||0)<3)dis=true;if(a==='distraint'&&!B.foes.some(f=>f.alive&&f.st.bond))dis=true;if(a==='scrutiny'&&!u.st.regard)dis=true;if(a==='assign'&&!B.foes.some(f=>f.alive&&f.st.bond))dis=true;
+    return btn(ab.n,ab.cost?`${ab.cost} Focus`:'Basic',ab.d,dis,()=>pickTarget(u,a))});
+  const items=Object.entries(G.items).filter(([k,n])=>n>0);
+  list.push(btn('Item',items.length?items.map(([k,n])=>`${ITEMS[k].n} ×${n}`).join(', '):'None',items.length?'Use an item from your pack. Uses your turn.':'You have no items.',!items.length,()=>itemMenu(u)));
+  list.push(btn('Guard',u.house==='thessal'?'+1 Focus, +1 Regard':'+1 Focus','Halve damage taken until your next turn and regain an extra Focus.',false,()=>act(u,'guard')));
+  acts.replaceChildren(...list);setTimeout(()=>acts.querySelector('button:not(:disabled)')?.focus(),30)}
+function itemMenu(u){const acts=$('bActs');acts.replaceChildren(...Object.entries(G.items).filter(([,n])=>n>0).map(([k,n])=>h('button',{onclick:()=>pickTarget(u,'item:'+k),onmouseenter:()=>$('bDesc').textContent=ITEMS[k].d},ITEMS[k].n,h('small',{},`×${n}`))),h('button',{onclick:()=>showActs(u)},'Back',h('small',{},'')))}
+function pickTarget(u,a){const ab=a.startsWith('item:')?{tgt:'ally'}:AB[a];
+  if(ab.tgt==='self'){act(u,a,u);return}if(ab.tgt==='all'){act(u,a,null);return}
+  const pool=(ab.tgt==='ally'?B.party:B.foes).filter(t=>t.alive);if(pool.length===1&&ab.tgt==='enemy'){act(u,a,pool[0]);return}
+  const acts=$('bActs');$('bDesc').textContent=ab.tgt==='ally'?'Choose an ally.':'Choose a target — tap a name in the scene or below.';
+  acts.replaceChildren(...pool.map(t=>h('button',{onclick:()=>act(u,a,t)},t.name,h('small',{},`${t.hp}/${t.maxhp} HP${stText(t)?' · '+stText(t):''}`))),h('button',{onclick:()=>{B.pick=null;pool.forEach(t=>t.tag.classList.remove('pick'));showActs(u)}},'Back',h('small',{},'')));
+  pool.forEach(t=>t.tag.classList.add('pick'));B.pick=t=>{if(pool.includes(t))act(u,a,t)}}
+function battleClick(e){if(!B||!B.pick)return;const r=cv.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-((e.clientY-r.top)/r.height)*2+1},bCam);
+  let best=null,bd=.9;for(const u of B.all){if(!u.alive)continue;const p=u.model.position.clone();p.y=.8;const d=ray.ray.distanceToPoint(p);if(d<bd){bd=d;best=u}}if(best)B.pick(best)}
+function battleKey(e){if(!B||$('bPanel').hidden)return false;const n=parseInt(e.key);if(n>0){const b=$('bActs').children[n-1];if(b&&!b.disabled){b.click();return true}}return false}
+async function act(u,a,t){B.pick=null;B.all.forEach(x=>x.tag.classList.remove('pick'));$('bPanel').hidden=true;const done=B.res;B.res=null;
+  if(a==='guard'){u.st.defend=1;u.focus=Math.min(6,u.focus+1);if(u.house==='thessal')addSt(u,'regard',1);log(`${u.name} guards.`);await sleep(500);done();return}
+  if(a.startsWith('item:')){const k=a.slice(5);G.items[k]--;await cast(u,'#d8c48a');if(k==='draught')heal(t,t.maxhp*.5);if(k==='bead'){t.focus=Math.min(6,t.focus+3);num(t,'+3 Focus','#a8d4ff')}if(k==='salt'){t.st.rot=0;t.st.bond=0;num(t,'Cleansed','#fff')}
+    log(`${u.name} uses ${ITEMS[k].n}${t!==u?' on '+t.name:''}.`);await sleep(600);done();return}
+  const ab=AB[a];u.focus-=ab.cost;log(`${u.name}: ${ab.n}${t&&t!==u?' → '+t.name:''}`);
+  await ABRUN[a](u,t);updTags();await sleep(450);done()}
+const HC=h=>HOUSES[h].col;
+const ABRUN={
+  crush:async(u,t)=>{await lunge(u,t);damage(t,calc(u,t,1))},
+  strike:async(u,t)=>{await lunge(u,t);damage(t,calc(u,t,1))},
+  hand:async(u,t)=>{await cast(u,HC('ikorran'));await spark(t,'#cfe4ff');damage(t,calc(u,t,1))},
+  shoulder:async(u,t)=>{await cast(u,HC('undrum'));if(t===u){num(u,'Braced','#e8c27c');u.st.defend=1;return}t.st.guard={by:u,t:2};num(t,'Shouldered','#e8c27c')},
+  plumb:async(u,t)=>{await cast(u,HC('undrum'));await spark(t,'#e8c27c');damage(t,calc(u,t,1.3));t.st.heavy=2},
+  set:async(u,t)=>{await cast(u,HC('undrum'));await spark(t,'#e8c27c');t.st.set=1;u.st.light=1;num(t,'Set','#e8c27c')},
+  overburden:async(u,t)=>{const L=u.st.load||0;u.st.load=0;await lunge(u,t);await spark(t,'#e8c27c');damage(t,calc(u,t,1+L))},
+  bind:async(u,t)=>{await cast(u,'#f2efe6');t.st.bond=Math.min(6,(t.st.bond||0)+2);num(t,`Bond ${t.st.bond}`,'#f2efe6')},
+  distraint:async(u,t)=>{if(!t.st.bond){num(t,'No bond','#fff');return}const b=t.st.bond;t.st.bond=0;await cast(u,'#f2efe6');await spark(t,'#f2efe6');const d=damage(t,calc(u,t,.9*b,{pierce:true}),'hit');heal(u,d/2)},
+  assign:async(u,t)=>{const f=B.foes.filter(x=>x.alive).sort((a,b)=>(b.st.bond||0)-(a.st.bond||0))[0];await cast(u,'#f2efe6');const a=Math.round(t.maxhp*.35);heal(t,a);t.st.rot=0;if(f){await spark(f,'#f2efe6');hurt(f,a,'#f2efe6')}},
+  forgive:async(u)=>{await cast(u,'#ffffff');for(const f of B.foes)if(f.alive&&f.st.bond){const b=f.st.bond;f.st.bond=0;spark(f,'#fff');hurt(f,b*7,'#ffffff')}},
+  touch:async(u,t)=>{await lunge(u,t);damage(t,calc(u,t,.8));if(t.alive){addSt(t,'rot',1)}},
+  quicken:async(u,t)=>{await cast(u,HC('mirrowen'));await spark(t,'#b7d36a');const r=t.st.rot||0;t.st.rot=0;damage(t,calc(u,t,1)+r*(r+1)/2*3)},
+  stay:async(u,t)=>{await cast(u,HC('mirrowen'));t.st.stay=2;num(t,'Stayed','#b7d36a')},
+  draught:async(u,t)=>{await cast(u,'#b7d36a');heal(t,t.maxhp*.4);t.st.debt={n:3,a:Math.round(t.maxhp*.1)}},
+  longgreen:async(u)=>{await cast(u,'#7fe36a');const c=Math.round(u.maxhp*.2);u.maxhp-=c;u.hp=Math.max(1,u.hp-c);num(u,`-${c} years`,'#7fe36a');u.st.green=3;u.st.first=1},
+  handthrough:async(u,t)=>{await cast(u,HC('ikorran'));await spark(t,'#cfe4ff');damage(t,calc(u,t,1.6,{pierce:true}))},
+  step:async(u)=>{await cast(u,HC('ikorran'));u.st.evade=1;u.st.first=1;num(u,'Step','#a8d4ff')},
+  stretch:async(u,t)=>{await cast(u,HC('ikorran'));damage(t,calc(u,t,.6));t.st.last=2;t.st.weak=1;num(t,'Stretched','#a8d4ff')},
+  attenuate:async(u,t)=>{await cast(u,HC('ikorran'));await spark(t,'#cfe4ff');damage(t,calc(u,t,1.2,{pierce:true}));if(t.alive)addSt(t,'rot',3)},
+  glare:async(u,t)=>{await cast(u,'#fff4cf');damage(t,calc(u,t,.8));addSt(u,'regard',1)},
+  scrutiny:async(u,t)=>{const r=u.st.regard||0;u.st.regard=0;await cast(u,'#fff4cf');await spark(t,'#fff4cf');damage(t,calc(u,t,.75*r,{pierce:true}))},
+  fix:async(u,t)=>{await cast(u,'#fff4cf');const ch=t.E&&t.E.boss?.3:.75;if(Math.random()<ch){t.st.stare=1;num(t,'Fixed','#f3dca0')}else num(t,'Resisted','#fff')},
+  unregard:async(u,t)=>{await cast(u,'#fff4cf');t.st.unreg=1;num(t,'Unregarded','#f3dca0')},
+  persist:async(u,t)=>{u.st.regard-=3;await cast(u,'#fff4cf');heal(t,t.maxhp*.6);t.st.rot=0;t.st.stay=1},
+};
+// ---- enemy turn ----
+async function enemyTurn(u){u.turnN++;const E=u.E;let pool=B.party.filter(p=>p.alive&&!p.st.unreg);if(!pool.length)pool=B.party.filter(p=>p.alive);
+  const tgt=()=>Math.random()<.45?pool.slice().sort((a,b)=>a.hp-b.hp)[0]:rnd(pool);
+  let sk;if(u.key==='sellim'){const pat=['cable','shoulderE','shear','plumbE'];sk=pat[(u.turnN-1)%4];if(sk==='shear'&&!u.st.charging)sk='cable'}
+  else sk=E.skills.length>1&&Math.random()<.35?E.skills[1]:E.skills[0];
+  if(sk==='hthru'&&Math.random()<.5)sk='stab';if(sk==='collect'&&!pool.some(p=>p.st.bond))sk='bindE';
+  const t=tgt();
+  switch(sk){
+    case 'stab':case 'maul':case 'gore':case 'cable':log(`${u.name} attacks ${t.name}.`);await lunge(u,t);damage(t,calc(u,t,sk==='cable'?1.15:1));if(sk==='cable'&&t.alive&&Math.random()<.5){addSt(t,'rot',1)}break;
+    case 'bite':log(`${u.name} bites ${t.name}.`);await lunge(u,t);if(damage(t,calc(u,t,.9))>0&&t.alive)addSt(t,'rot',1);break;
+    case 'hthru':log(`${u.name} hands a blade into ${t.name}.`);await spark(t,'#cfe4ff');damage(t,calc(u,t,1.35,{pierce:true}));break;
+    case 'bindE':log(`${u.name} binds ${t.name} to a promise.`);await cast(u,'#f2efe6');t.st.bond=Math.min(6,(t.st.bond||0)+2);num(t,`Bond ${t.st.bond}`,'#f2efe6');break;
+    case 'collect':{const b=pool.filter(p=>p.st.bond).sort((a,c)=>c.st.bond-a.st.bond)[0];log(`${u.name} calls in ${b.name}'s debt.`);await cast(u,'#f2efe6');const d=hurt(b,Math.round(u.atk*.8*b.st.bond),'#f2efe6');b.st.bond=0;heal(u,d/2);break}
+    case 'plumbE':log(`${u.name} turns ${t.name}'s weight against them.`);await cast(u,HC('undrum'));damage(t,calc(u,t,1.2));t.st.heavy=2;break;
+    case 'trample':log(`${u.name} tramples through the party.`);await lunge(u,pool[0]);for(const p of pool)damage(p,calc(u,p,.65));break;
+    case 'spores':log(`${u.name} shed hastening spores.`);await cast(u,'#c8e37a');for(const p of pool){damage(p,calc(u,p,.45));if(p.alive)addSt(p,'rot',1)}break;
+    case 'shoulderE':log(`Sellim shoulders the shelter’s whole weight. Break her focus: Set her, or make her stare.`);u.st.charging=1;await cast(u,'#e8c27c');num(u,'Shouldering…','#e8c27c');break;
+    case 'shear':u.st.charging=0;log('Sellim releases it all. SHEAR.');await cast(u,'#ffb36b');for(const p of B.party.filter(x=>x.alive)){await spark(p,'#ffb36b');damage(p,calc(u,p,1.45),'hit','#ffb36b')}break;
+  }
+  updTags();await sleep(500)}
+
+// =====================================================================
+// AREAS & STORY
+// =====================================================================
+const AREAS={
+  waystation:{style:'compound',spawn:[8,10],
+    grid(){const g=G2(17,13,'#');R2(g,1,1,15,11,',');R2(g,7,0,9,0,'x');return g},
+    ents(){return[
+      {id:'aud',x:8,y:4,npc:1,label:'Talk to Commissioner Verrel',model:npc('saldric',{skin:'#d8b08e',hair:'#cfc6b8',tunic:'#e6dfcf',cloak:'#2f3b55'}),act:sceneAud},
+      {id:'pell',x:3,y:7,npc:1,label:'Talk to Clerk Pell',model:npc('saldric',{skin:'#a87452',cloak:'#4a3a2a'}),act:scenePell},
+      {id:'desk',x:3,y:6,w:2,label:'',model:PROP.desk,rot:0},
+      {id:'t1',x:2,y:2,label:'Read the archive notice',model:()=>PROP.tent('#e2dac4'),act:async()=>talk([['narr','Three archive tents, each with a signboard declaring itself the official one. A fourth sign, older than the others, says DISPUTED.']])},
+      {id:'t2',x:14,y:2,label:'',model:()=>PROP.tent('#c9d2df')},{id:'t3',x:14,y:9,label:'',model:()=>PROP.tent('#d7c9b0')},
+      {id:'aud2',x:12,y:5,w:2,label:'',model:PROP.desk},
+    ]},
+    async enter(){if(!G.flags.introAud){G.flags.introAud=1;await talk([['narr','The Second Road waystation: a walled compound a day out from the Concord Ring, where Saldric clerks log everyone going in and everyone coming out.'],['pell','Commissioner Verrel will see you now. She’s by the north tents. Don’t sit on anything.']])}},
+    async exit(){if(!G.flags.metAud){await talk([['pell','You haven’t seen the Commissioner. She will want to have seen you.']]);P.path=[];const[wx,wz]=tw(8,2);P.x=8;P.y=2;P.fx=wx;P.fz=wz;return}
+      await go('ring',[14,22],Math.PI)},
+  },
+  ring:{style:'ring',spawn:[14,22],
+    grid(){const g=G2(30,24,'#');R2(g,13,6,16,23,'.');R2(g,13,8,13,22,'~');R2(g,16,8,16,22,'~');C2(g,14.5,3.5,4.3,'o');R2(g,3,13,26,14,'.');
+      R2(g,3,6,9,10,',');R2(g,6,11,6,12,'.');R2(g,20,6,26,10,',');R2(g,23,11,23,12,'.');R2(g,3,17,9,21,',');R2(g,6,15,6,16,'.');R2(g,20,17,26,21,',');R2(g,23,15,23,16,'.');
+      R2(g,1,3,10,4,'.');R2(g,0,3,0,4,'x');R2(g,14,23,15,23,'x');return g},
+    ents(){const chairs=[];for(let k=0;k<6;k++){const a=k/6*Math.PI*2+Math.PI/6;const x=Math.round(14.5+Math.cos(a)*2.2),y=Math.round(3.5+Math.sin(a)*2.2);
+        chairs.push({id:'chair'+k,x,y,rot:-a-Math.PI/2+Math.PI,label:k===2?'Examine the sixth chair':'',model:()=>PROP.chair(k===2?'sixth':''),act:k===2?sceneChair:null})}
+      const sock=(id,x,y,txt,nimTxt)=>({id,x,y,label:'Examine the object',marker:'#f3dca0',model:PROP.socket,done:()=>G.flags[id],act:async()=>{G.flags[id]=1;G.sockets=(G.sockets||0)+1;G.salt+=5;
+        await talk([['narr',txt],['nim',nimTxt],['narr',`Catalogued. The commission pays 5 salt per entry. (${G.sockets}/3)`]]);if(G.sockets===3)jot('Socket objects','Three catalogue entries checked against the Ring: a darkwood crook, a counter-slider, a pouring bowl. Every handle worn smooth by daily use. Not one has a function anybody can name.')}});
+      return[...chairs,
+      {id:'center',x:14,y:3,label:'',model:()=>{const g=new THREE.Group();return g},solid:false},
+      sock('s1',4,7,'A crook of dark wood hangs on a peg at coat height. The handle is worn smooth by a thumb, in exactly one place. Catalogue entry 4,112. Function: none recorded.','Feel that? Whoever used this used it every day. Every single day. And nobody alive can tell you what for.'),
+      sock('s2',25,7,'A counter with a groove cut along its length, and a stone slider that fits the groove exactly. You push it. It runs smooth, end to end, and stops with a soft click. Catalogue entry 7,309.','Clicks at the end. Like it’s counting something. I hate that one.'),
+      sock('s3',4,20,'A shallow bowl set into the wall at chest height, with a pouring lip on one side, as if for something poured every morning. Bone dry. No dust. Catalogue entry 10,044.','No dust anywhere in here. Four hundred years. Nobody sweeps.'),
+      {id:'chan',x:13,y:17,label:'Examine the water channel',solid:true,model:()=>new THREE.Group(),act:async()=>talk([['narr','Water runs in the cut channel, steady and clear. It runs inward, toward the center of the Ring. Further in, the channel narrows and goes under stone that nothing can cut.'],['nim','Three survey parties followed those. Two came back.']])},
+      {id:'b1',x:7,y:8,label:'',model:PROP.bench},{id:'b2',x:22,y:8,label:'',model:PROP.bench},{id:'b3',x:7,y:19,label:'',model:PROP.table},{id:'b4',x:21,y:7,label:'',model:PROP.table},
+      {id:'oda',x:25,y:20,npc:1,label:'',model:npc('ikorran',{skin:'#c79670',hair:'#2a1c14',hood:false,tunic:'#5b6e7c'}),show:()=>!G.flags.odaJoined,rot:-Math.PI/2},
+      {id:'r1',x:22,y:20,npc:1,label:'',model:()=>enemyModel('broker'),show:()=>!G.flags.odaFight,rot:Math.PI/2},
+      {id:'r2',x:23,y:18,npc:1,label:'',model:()=>enemyModel('cutpurse'),show:()=>!G.flags.odaFight,rot:Math.PI/2},
+      {id:'r3',x:21,y:19,npc:1,label:'',model:()=>enemyModel('anchor'),show:()=>!G.flags.odaFight,rot:Math.PI/2},
+    ]},
+    triggers:[{flag:'odaFight',rect:[20,17,26,21],when:()=>true,run:sceneOda}],
+    async enter(){if(!G.flags.ringIntro){G.flags.ringIntro=1;G.clock=0;await card('The Concord Ring','A city nobody alive built. Five Houses pay to keep it in repair, and none of them will sleep in it.');await sceneNim()}},
+    update(dt){if(G.clock<1&&!locked()){G.clock+=dt/480;if(G.clock>=.75&&!G.flags.warned){G.flags.warned=1;toast('The light is going. Maintain, log, and depart before dark.')}
+        if(G.clock>=1&&!G.flags.sleepless){G.flags.sleepless=1;toast('Dark has come. Nobody sleeps in the Ring. Your party is Sleepless (−15% attack) until you leave.');setSky('dusk')}}
+      $('dim').style.opacity=Math.min(.45,Math.max(0,G.clock-.4)*.75);updateClock()},
+    async exit(x){if(x>=14){await talk([['nim','Wrong way. Verrel’s detail goes out the Sixth.']]);return}
+      if(!G.flags.odaJoined){await talk([['nim','Not yet. Something’s going on in the south-east court — hear that? Somebody’s shouting in Low Belt.']]);return}
+      await talk([['narr','The Sixth Avenue runs west from the plaza, through a gate in the Ring’s wall, and out into open country.'],['nim','Eighteen days. Pack light. Nobody stays at the shelter overnight. That’s instruction three.']]);
+      await go('road',[5,62],Math.PI)},
+  },
+  road:{style:'road',spawn:[5,62],
+    grid(){const g=G2(11,64,'s');const r=seeded(99);for(let y=0;y<64;y++)for(let x=0;x<11;x++)if((x<3||x>7)&&r()<.09)g.t[y][x]='b';R2(g,4,0,6,63,'=');R2(g,4,0,6,0,'x');return g},
+    ents(){const L=[];for(let d=1;d<=6;d++)L.push({id:'mk'+d,x:7,y:63-d*9,label:'Read the road marker',model:PROP.marker,act:async()=>talk([['narr',`A marker stone, same jointless grey as the road. Someone has scratched a day count into the dust on it, not the stone: day ${Math.min(18,d*3)}.`]])});
+      return[...L,
+      {id:'h1',x:5,y:45,npc:1,model:hound,show:()=>!G.flags.hounds,rot:0},{id:'h2',x:4,y:44,npc:1,model:hound,show:()=>!G.flags.hounds,rot:.4},{id:'h3',x:6,y:44,npc:1,model:hound,show:()=>!G.flags.hounds,rot:-.4},
+      {id:'fire',x:8,y:26,label:'Rest at the campfire',model:PROP.campfire,act:sceneCamp},
+      {id:'sw',x:5,y:12,npc:1,model:swine,show:()=>!G.flags.swine,rot:0},{id:'mo',x:4,y:11,npc:1,model:moths,show:()=>!G.flags.swine,anim:(o,t)=>animFig(o,t)},
+    ]},
+    triggers:[
+      {flag:'hounds',rect:[0,46,10,50],when:()=>true,run:async()=>{await talk([['narr','Three dogs stand on the paving ahead, coats matted green with spores.'],['nim','Spore-hounds. Strays off a mortuary convoy. Bloom country is two hundred miles from here. They should not be this far out.'],['oda','Should and shouldn’t. Ask them how they feel about it.']]);await battle(['hound','hound','hound'],{intro:'Spore-hounds. Their bites set rot running.'});refreshEnts()}},
+      {flag:'walker',rect:[0,36,10,38],when:()=>true,run:sceneWalker},
+      {flag:'camp',rect:[0,26,10,27],when:()=>true,run:async()=>{await talk([['nim','Day twelve. We camp. The road will still be here, it’s the one thing that always is.']]);await sceneCamp()}},
+      {flag:'swine',rect:[0,13,10,16],when:()=>true,run:async()=>{await talk([['narr','A hollow-swine roots at the road’s edge: pale, long-legged, bloated by some pressure it no longer lives under. A cloud of bloom-moths lifts off its back.'],['oda','That’s a Sink animal. On the Sixth Road. Two hundred miles uphill of anywhere it could breathe.'],['nim','Things are walking toward the gate. Let’s not be things.']]);await battle(['swine','moths'],{intro:'The swine charges; the moths seed rot.'});refreshEnts()}},
+    ],
+    async enter(){G.flags.sleepless=0;setSky('day');if(!G.flags.roadIntro){G.flags.roadIntro=1;G.day=1;await card('The Sixth Road','Eighteen days at caravan pace, on paving no House can cut, toward a gate with nothing behind it.')}},
+    update(dt,t){const d=1+Math.floor((63-P.y)/63*17);if(d!==G.day){G.day=d;updateClock()}
+      if(walker){walker.position.z=player.position.z-1;walker.position.x=9+Math.sin(t*.2);animFig(walker,t,true);walker.visible=G.flags.walker&&!G.flags.walkerGone&&P.y>28}},
+    async exit(){await talk([['narr','On the eighteenth day, a grey line rises out of the scrub ahead.']]);await go('gate',[9,15],Math.PI)},
+  },
+  gate:{style:'gate',spawn:[9,15],
+    grid(){const g=G2(20,16,'s');const r=seeded(5);for(let y=0;y<16;y++)for(let x=0;x<20;x++)if(r()<.05&&(x<7||x>12))g.t[y][x]='b';R2(g,9,6,10,15,'=');R2(g,2,5,17,5,'W');R2(g,9,5,10,5,'g');R2(g,9,0,10,4,'-');return g},
+    ents(){return[
+      {id:'leaves',x:9,y:5,w:2,label:'Examine the gate',model:PROP.gateLeaves,solid:true,act:sceneGate,show:()=>true},
+      {id:'shelter',x:13,y:8,w:3,hh:3,label:'Search the shelter',model:PROP.shelter,act:sceneLog},
+      {id:'sellim',x:13,y:11,npc:1,label:'',model:()=>enemyModel('sellim'),show:()=>!G.flags.sellimGone,rot:Math.PI},
+      {id:'a1',x:12,y:12,npc:1,model:()=>enemyModel('anchor'),show:()=>!G.flags.sellimFight,rot:Math.PI},{id:'a2',x:15,y:12,npc:1,model:()=>enemyModel('anchor'),show:()=>!G.flags.sellimFight,rot:Math.PI},
+    ]},
+    triggers:[{flag:'sellimFight',rect:[0,0,19,12],when:()=>true,run:sceneSellim}],
+    async enter(){if(!G.flags.gateIntro){G.flags.gateIntro=1;await card('The Gate','A wall of Ring stone a hundred and forty feet long, standing alone in the scrub.');
+      await talk([['narr','In the middle of the wall, the gate. Twin leaves of darkwood on bronze hinges. Both leaves stand open.'],['nim','Open.'],['nim','Toward us.']])}},
+  },
+};
+let walker=null;
+
+// ---- scenes ----
+async function sceneAud(){
+  if(G.flags.metAud){await talk([['aud','The north gate. Keeper Nim is waiting inside the Ring. And leave before dark.']]);return}
+  const H=HOUSES[G.house];
+  await say('aud','You’re the one Pell found. Good. Don’t sit — the chairs are Saldric property and you’d owe for the use of one.');
+  await say('aud','I chair the quarterly reconciliation at the Concord Ring. Nineteen years. I have read all five Houses’ logs end to end. Nobody else alive has.');
+  await say('aud','There is a pattern in them. A gate found open. A survey party that did not come back. Reports struck from the record. All of it falls in the two years before a Tolling.');
+  await say('aud','The next Tolling is in four years. And this quarter, the gate detail on the Sixth Road has not reported in.');
+  let c=await choose(['Why are you telling me?','What is the Sixth Road?']);
+  if(c===0){await say('aud',`Because you have no House. ${H.exile}. ${{undrum:'Nobody in the Sink can lay a carry on you.',saldric:'There is no bond with your name on it. I checked.',mirrowen:'No rotation will call you home.',ikorran:'No shard is watching for you.',thessal:'Half my clerks have already forgotten you came in.'}[G.house]}`);
+    await say('aud','Nobody owns you, so nobody can call in what you owe. I cannot send anyone a House can lean on.')}
+  else{await say('aud','Six roads leave the Ring. Five go somewhere. The sixth runs eighteen days into open country and ends at a gate in a wall with nothing behind it.');await say('aud','Five Houses pay, in rotation, to keep its hinges oiled. Four hundred and sixteen years. Nobody will discuss it.')}
+  await say('aud','Go into the Ring. Keeper Nim — Mirrowen, gate rotation — is waiting inside the Second Gate for my detail. Then walk the Sixth Road and find out why my detail is silent.');
+  await say('aud','Standing instruction, and I mean it: maintain, log, and depart before dark. Nobody sleeps in the Ring.');
+  c=await choose(['I’ll go.','What’s in it for me?']);
+  if(c===1){await say('aud','Thirty measures of witness-salt now. Sixty when you come back. If you come back with the log, I will owe you, and I do not say that lightly.')}else await say('aud','Thirty measures of salt for the road. Pell has the rest.');
+  G.salt+=30;endDlg();G.flags.metAud=1;
+  jot('The Tolling','Every nineteen years, sound stops for a full dimming. Afterwards something is missing: a category, removed cleanly, leaving holes in sentences where the nouns were. The next Tolling is four years away.');
+  jot('Commission detail','Commissioner Aud Verrel (Saldric, auditor) has hired you because you have no House standing. Find Keeper Nim in the Ring, walk the Sixth Road, and learn why the gate detail has gone silent.');
+  jot('The Standing Lack','No House garrisons the Concord Ring; all five maintain it. No House claims the Sixth’s inheritance, titles, or roads. The sixth chair is set at every council and its vote counts as abstention. Any House that tries to fill the socket faces the other four.');
+}
+async function scenePell(){await say('pell','Supplies for the road. Prices are fixed by the Second Road schedule. Arguing adds a surcharge.');
+  for(;;){const c=await choose([`Slow draught — 15 salt (you have ${G.items.draught||0})`,`Regard bead — 20 salt (you have ${G.items.bead||0})`,`Witness-salt chip — 12 salt (you have ${G.items.salt||0})`,`Done (salt: ${G.salt})`]);
+    if(c===3)break;const k=['draught','bead','salt'][c];if(G.salt<ITEMS[k].price){await say('pell','You can’t afford that. I’ve noted that you asked.');continue}G.salt-=ITEMS[k].price;G.items[k]=(G.items[k]||0)+1;await say('pell','Logged.')}
+  endDlg()}
+async function sceneNim(){
+  await say('narr','Just inside the Second Gate a woman sits on the paving with her back against a wall, eating something that smells faintly of compost.');
+  await say('nim','You’re Verrel’s? You don’t have a House on you. Good. The gate likes that better.');
+  await say('nim','I’m Nim. My lineage has held the Mirrowen quarter of the gate rotation for six generations. I talk to it. Don’t make that face.');
+  await say('nim','The detail out there now is my cousin Tarrow’s crew. They report every nine days. It’s been twenty.');
+  await say('nim','And the log says the gate has been found open twice. It’s been three times. I reported the third myself. Somebody took it out.');
+  const c=await choose(['Who could remove an entry from a commission log?','Let’s go.']);
+  if(c===0)await say('nim','Someone with a key to all five copies. Which is nobody. Which is the problem.');
+  await say('nim','We leave by the Sixth Avenue, west off the central plaza. And we’re out of the wall before dark, yes? I’ve done three nights here. I don’t do four.');
+  endDlg();joinParty('nim','Nim','mirrowen');
+  jot('Keeper Nim Sixth-Road','Mirrowen gate-keeper. She says the gate has been found open three times, not two. She reported the third; it never reached the log. Her cousin Tarrow’s detail is twenty days overdue.');
+  toast('Tap the ground to walk. Tap people and glowing objects to interact.');
+}
+async function sceneChair(){
+  await say('narr','Six chairs stand in a ring at the center of the plaza. Five carry House marks. The sixth is plain darkwood, set and addressed. In four hundred and sixteen years of minutes, it has always abstained.');
+  const c=await choose(['Sit in it.','Address it.','Leave it.']);
+  if(c===0){await say('narr','You go to sit. You cannot. Not won’t — your legs simply decline, politely, the way a hand declines a hot stove.');await say('nim','Nobody can. Don’t tell the Saldric I watched you try.');G.flags.satChair=1}
+  if(c===1){await say('you','Who is still maintaining this place?');await say('narr','Nothing answers. Somewhere in the Ring, water keeps running inward.');await say('nim','The minutes say it abstains. Eleven times, the clerk wrote something else. No two Houses agree on which eleven.')}
+  endDlg();jot('The Sixth Chair','At every commission meeting, a sixth chair is set and addressed in the empty plaza. Its vote is recorded as abstention — except in eleven entries, scattered across four centuries, where the clerk wrote something else.')}
+async function sceneOda(){
+  await say('narr','In the court, three people in good coats have a fourth backed against the wall. The fourth is clutching a bundle of net-cloth and swearing in Low Belt.');
+  await say('oda','—told you it’s not FOR sale, it’s for SHOWING, you salt-licking—');
+  await say('runner','The commission comes through at dimming. We would like to be gone. Hand it over and you can step home.');
+  await say('oda','Can’t step. Wall’s in the way. You lot picked your spot.');
+  await say('runner','We did.');
+  await say('nim','Ring objects don’t leave the Ring. Clause two. You want to tell them, or shall I?');
+  endDlg();
+  const r=await battle(['broker','cutpurse','anchor'],{intro:'Ring-runners. The broker binds debts; the anchor-man hits hard but slowly.'});
+  G.flags.odaJoined=1;refreshEnts();
+  await say('oda','Oda Thaw. Low Belt, cloudfisher, net-master. Thanks. That was going to be ugly.');
+  await say('narr','She unwraps the net-cloth. A bronze lamp, trimmed and unlit, with a maker’s mark in the old script. No corrosion at all.');
+  await say('oda','Came up in my nets eleven weeks back. Nothing comes up out of the cloud-bank clean. Nothing. They wanted it because it matches the Ring’s bronze.');
+  await say('nim','Same metal as the hinges on the Sixth Gate.');
+  await say('oda','Then I’m coming with you. Somebody is buying lamps, and I want to know who is selling roads.');
+  endDlg();joinParty('oda','Oda','ikorran');
+  jot('The bronze lamp','Oda Thaw pulled a bronze lamp out of the cloud-bank below the Scatter. It has a maker’s mark in the pre-Lack script and no corrosion — the same bronze as the Ring’s fittings and the Sixth Gate’s hinges. Ring-runners tried to take it.');
+}
+async function sceneWalker(){
+  if(!walker){walker=figure('thessal',{cloak:'#9a9282',tunic:'#6d665a',hood:true});walker.traverse(o=>{if(o.isMesh&&!o.isInk){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.55}});areaRoot.add(walker)}
+  await say('narr','Half a mile off, a figure walks parallel to the road. It matches your pace. When you stop, it has already stopped.');
+  const opts=['Call out to it.','Ignore it and keep walking.'];if(G.party.some(m=>m.house==='ikorran'))opts.push('Ask Oda to step to it.');
+  const c=await choose(opts);
+  if(c===0){await say('narr','You call out. You hear your own voice a moment before you speak — then nothing, when you do.');await say('nim','That’s a Stillmouth thing. We are nowhere near the Stillmouth.')}
+  if(c===1){await say('narr','You walk. It walks. For hours. At the dimming it is simply not there, and you cannot remember the moment it stopped being there.')}
+  if(c===2){await say('oda','I’ve got it in plain sight. Clean line.');await say('narr','Oda steps. She does not move.');await say('oda','It’s in plain sight and it is not near. That isn’t how anything works.')}
+  endDlg();G.flags.walkerGone=1;jot('The parallel walker','Half a mile off the Sixth Road, a figure matched our pace for hours. Voices arrived before they were spoken. Oda could see it but could not step to it: in plain sight, and not near.')}
+async function sceneCamp(){
+  healAll();renderHud();save();
+  await say('narr','You make camp beside the paving. The party rests. (HP fully restored. Progress saved.)');
+  for(;;){const c=await choose(['Ask Nim about the gate.','Ask Oda about the pins.','Talk about where you came from.','Sleep.']);
+    if(c===0){await say('nim','It opens. It closes. We oil it every quarter. On the far side, scrub, every direction. The standing instruction is three lines and the third is: the gate is left as it was found. Closed, latched, unlocked.');await say('nim','Unlocked. Five Houses, four hundred years, and nobody ever thought to lock it. Or everybody thought not to.')}
+    if(c===1){await say('oda','The Scatter is held together by nine hundred old pins. Doorways between shards. Nobody can make new ones that good.');await say('oda','Old Reth Pinhold surveyed the ancient ones. About forty end at the Concord Ring. And one — the forty-first — ends somewhere out this way. Nobody knows where. He published that. Nobody has invited him to dinner since.')}
+    if(c===2){await say('you',HOUSES[G.house].origin);await say('nim','So nobody’s waiting for you either. That’s two of us.');if(G.house==='thessal')await say('oda','Sorry — what were you saying? Oh. Right. Sorry. I was listening, I swear.')}
+    if(c===3)break}
+  endDlg()}
+async function sceneSellim(){
+  await say('narr','Someone is strapping cable around the shelter’s corner posts. Two broad men stand braced at the anchor points, legs set wide.');
+  await say('sellim','Stay back from the shelter. It’s coming down.');
+  let c=await choose(['There might be people inside.','On whose order?']);
+  if(c===0)await say('sellim','Then they have had notification. I called it three times. That is the form.');else await say('sellim','On a commission. Bonded, licensed. I take down buildings. That is all I do.');
+  await say('nim','The log is in there. Tarrow’s log.');
+  await say('sellim','Then it comes down with the roof. I’m sorry. I am not paid to be sorry, but I am.');
+  endDlg();
+  await battle(['sellim','anchor','anchor'],{intro:'Sellim Ninth-Hand, cable-knife. When she shoulders the shelter’s weight, break her focus with Set or Fix — or brace for the Shear.',style:'gate'});
+  G.flags.sellimDone=1;
+  await say('narr','Sellim goes down on one knee, breathing hard, and lets the cable drop.');
+  await say('sellim','Fine. Have your shelter.');
+  c=await choose(['Who commissioned you?','Why take a job like this?']);
+  if(c===1)await say('sellim','My brother is my carry. Lip-born, no pressure tolerance. I can’t bring him home. Jobs like this pay for the up-baskets.');
+  await say('sellim','Read the seal yourself.');
+  await say('narr','She hands you the warrant. It is stamped with a seal. You look at it, and look again, and cannot agree with yourself about its shape.');
+  await say('nim','That’s the sixth seal.');
+  await say('sellim','It came through the Marrowcourt like any other paper. Paid in lodestone marrow. Nobody pays in marrow.');
+  c=await choose(['Let her go.','Tell her to find you at the Ring if she learns more.']);
+  if(c===1){await say('sellim','I’ll be at the Lip. If you need something taken down, I’m bonded and I’m good.');G.flags.sellimAlly=1}else await say('sellim','Notification received.');
+  endDlg();G.flags.sellimGone=1;refreshEnts();
+  jot('The warrant','Sellim Ninth-Hand, an Undrum cable-knife, was commissioned to demolish the gate shelter with the log inside. The warrant came through the Marrowcourt, paid in lodestone marrow, stamped with a seal whose shape nobody can agree on: the sixth seal.')}
+async function sceneLog(){
+  if(!G.flags.sellimDone){await talk([['sellim','Back from the shelter. I said it’s coming down.']]);return}
+  if(G.flags.readLog){await talk([['narr','The shelter is stocked, clean and empty. Instruction three: whoever stocks it does not stay the night.']]);return}
+  await say('narr','Inside: stocked shelves, a cold stove, four bedrolls that were never unrolled. The gate log lies open on the table.');
+  await say('log','Day 18. Arrived. Gate closed, latched, unlocked. Oiled hinges per rotation.');
+  await say('log','Day 19. At dimming the gate stood open. Not by us. We closed it. We latched it.');
+  await say('log','Day 20. It is open again. It opens toward us. Tarrow is going through to close it from the other side.');
+  await say('log','Day 20, later. We are going to [[socket]].');
+  await say('nim','That’s a hole. That’s a socket. That’s what the Tolling does to writing.');
+  await say('oda','There’s no Tolling for four years.');
+  await say('nim','I know.');
+  endDlg();G.flags.readLog=1;healAll();renderHud();
+  jot('Tarrow’s log','Day 20: the gate opened toward the detail twice. Tarrow went through to close it from the far side. The last entry ends in a socket — a grammatically complete sentence with the noun missing — four years before any Tolling.')}
+async function sceneGate(){
+  if(!G.flags.readLog){await talk([['narr','Twin leaves of darkwood, open toward you, on bronze hinges that have never corroded.'],['nim','Log first. Then the gate. That’s the order.']]);return}
+  await say('narr','You step between the open leaves. On the far side: scrub, to the horizon, in every direction. Exactly as surveyed.');
+  await say('narr','Then Oda crouches and brushes at the dust with her hand. Under the scrub, under the grit: grey, jointless stone.');
+  await say('oda','The road doesn’t end at the gate. I can see the line it takes. I just can’t get near it.');
+  await say('nim','Tarrow went this way.');
+  const c=await choose(['Follow the road.','Close the gate behind you.']);
+  if(c===1)await say('narr','You close the gate behind you, and latch it, and do not lock it. When you look back, it is open again. Toward you.');
+  endDlg();G.flags.chapter1=1;save();
+  await card('End of Chapter One','The Sixth Road does not end at the gate. Somewhere beyond it, Tarrow’s detail went to close a door from the other side.','Chapter Two · Eighteen Days Out — coming next');
+  toTitle()}
+
+// =====================================================================
+// TITLE, CREATION, BOOT
+// =====================================================================
+let selHouse=null,titleT=0;
+function toTitle(){mode='title';G=null;$('hud').hidden=true;$('topr').hidden=true;$('obj').hidden=true;$('prompt').hidden=true;$('dlg').hidden=true;
+  const s=loadSave();$('bCont').disabled=!s||!!(s.flags&&s.flags.chapter1&&false);$('bCont').textContent=s&&s.flags.chapter1?'Continue (chapter complete)':'Continue';$('title').hidden=false;
+  // backdrop: the Ring with nobody in it
+  G={party:[],flags:{},items:{},journal:[],look:{}};A=AREAS.ring;if(areaRoot)world.remove(areaRoot);areaRoot=new THREE.Group();world.add(areaRoot);grid=A.grid();ents=A.ents().filter(e=>e.id.startsWith('chair')||e.id.startsWith('s')).map(ent);buildTerrain('ring');for(const e of ents)placeEnt(e);
+  if(player){world.remove(player);player=null}for(const f of followers)world.remove(f.obj);followers=[];G=null}
+$('bNew').onclick=()=>{$('title').hidden=true;$('create').hidden=false;renderHouses()};
+$('bCont').onclick=async()=>{const s=loadSave();if(!s)return;G=s;$('title').hidden=true;if(G.flags.chapter1){await card('Chapter One complete','Your save is kept. Chapter Two will pick up from here.');toTitle();return}await go(G.area,G.pos)};
+function renderHouses(){$('houses').replaceChildren(...Object.entries(HOUSES).map(([k,H])=>h('button',{class:'hc'+(selHouse===k?' on':''),onclick:()=>{selHouse=k;$('bBegin').disabled=false;renderHouses()}},
+  h('div',{style:'display:flex;gap:10px;align-items:center'},sig(k),h('h3',{},`${H.name} · ${H.title}`)),h('div',{class:'motto'},H.motto),h('div',{class:'ex'},`Exile: ${H.exile}. ${H.blurb}`),
+  h('ul',{},...H.abil.slice(1,4).map(a=>h('li',{},`${AB[a].n} — ${AB[a].d.split('.')[0]}.`))))))}
+$('bBegin').onclick=async()=>{const name=($('nameIn').value||'').trim().slice(0,18)||'Ashe';
+  G={name,house:selHouse,look:{skin:rnd(SKINS),hair:rnd(HAIRS)},party:[],flags:{},items:{draught:2,bead:1},salt:20,area:'waystation',pos:null,clock:0,day:1,journal:[],sockets:0};
+  G.party.push(mkMember('you',name,selHouse,1));$('create').hidden=true;
+  await card('The Shelf','Every nineteen years the world goes silent for one day. When sound returns, something is missing, and nobody can say what.');
+  await card('The Fourth Tolling','Four hundred and sixteen years ago, the Tolling took a House. The five that remain still set a chair for it at every council.');
+  await card(`${name}, ${HOUSES[selHouse].exile}`,HOUSES[selHouse].origin);
+  await go('waystation')};
+
+// main loop
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+  const w=cv.clientWidth,hh=cv.clientHeight;if(cv.width!==Math.round(w*renderer.getPixelRatio())||cv.height!==Math.round(hh*renderer.getPixelRatio()))renderer.setSize(w,hh,false);
+  if(mode==='battle'&&B){bFit();for(const u of B.all)if(u.alive)animFig(u.model,t+u.home.z,false);posTags();renderer.render(bScene,bCam)}
+  else{if(mode==='explore')updateExplore(dt,t);else if(mode==='title'){titleT+=dt;const c=new THREE.Vector3(Math.sin(titleT*.05)*4,0,2+Math.cos(titleT*.05)*3);fitCam(c);if(waterTex)waterTex.offset.y=(waterTex.offset.y+dt*.5)%1}
+    renderer.render(world,ocam)}
+  requestAnimationFrame(frame)}
+toTitle();requestAnimationFrame(frame);
+window.__dbg={get G(){return G},AREAS,loadArea,go,runEnt,battle,get B(){return B},get mode(){return mode},P,act,ents:()=>ents};
+</script>
+</body>
+</html>
