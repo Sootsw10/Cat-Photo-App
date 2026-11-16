@@ -1,0 +1,348 @@
+{
+  "speakers": {
+    "aud": { "name": "Commissioner Aud Verrel", "house": "saldric" },
+    "pell": { "name": "Clerk Pell", "house": "saldric" },
+    "nim": { "name": "Keeper Nim Sixth-Road", "house": "mirrowen" },
+    "oda": { "name": "Oda Thaw", "house": "ikorran" },
+    "sellim": { "name": "Sellim Ninth-Hand", "house": "undrum" },
+    "runner": { "name": "Bond-broker", "house": "saldric" },
+    "log": { "name": "Gate log - Tarrow's detail" }
+  },
+
+  "objectives": [
+    { "if": ["!metAud"], "text": "Speak with Commissioner Verrel." },
+    { "area": "waystation", "text": "Take the north gate into the Concord Ring. Clerk Pell sells supplies." },
+    { "area": "ring", "if": ["!odaJoined"], "text": "Find out what the shouting in the south-east court is about. Optional: catalogue socket objects ({sockets}/3)." },
+    { "area": "ring", "text": "Leave by the Sixth Avenue, west of the central plaza, before dark." },
+    { "area": "road", "text": "Walk the Sixth Road to the gate." },
+    { "area": "gate", "if": ["!sellimDone"], "text": "Reach the shelter by the gate." },
+    { "area": "gate", "if": ["!readLog"], "text": "Search the shelter for the gate log." },
+    { "area": "gate", "text": "Examine the gate." }
+  ],
+
+  "scenes": {
+    "intro": [
+      { "card": "The Shelf", "text": "Every nineteen years the world goes silent for one day. When sound returns, something is missing, and nobody can say what." },
+      { "card": "The Fourth Tolling", "text": "Four hundred and sixteen years ago, the Tolling took a House. The five that remain still set a chair for it at every council." },
+      { "card": "{name}, {exile}", "text": "{origin}" },
+      { "area": "waystation" }
+    ],
+
+    "waystation_enter": [
+      { "if": "!introAud", "then": [
+        { "set": "introAud" },
+        { "say": "narr", "text": "The Second Road waystation: a walled compound a day out from the Concord Ring, where Saldric clerks log everyone going in and everyone coming out." },
+        { "say": "pell", "text": "Commissioner Verrel will see you now. She's by the north tents. Don't sit on anything." }
+      ]}
+    ],
+
+    "aud": [
+      { "if": "metAud", "then": [
+        { "say": "aud", "text": "The north gate. Keeper Nim is waiting inside the Ring. And leave before dark." }
+      ], "else": [
+        { "say": "aud", "text": "You're the one Pell found. Good. Don't sit - the chairs are Saldric property and you'd owe for the use of one." },
+        { "say": "aud", "text": "I chair the quarterly reconciliation at the Concord Ring. Nineteen years. I have read all five Houses' logs end to end. Nobody else alive has." },
+        { "say": "aud", "text": "There is a pattern in them. A gate found open. A survey party that did not come back. Reports struck from the record. All of it falls in the two years before a Tolling." },
+        { "say": "aud", "text": "The next Tolling is in four years. And this quarter, the gate detail on the Sixth Road has not reported in." },
+        { "choice": [
+          { "text": "Why are you telling me?", "do": [
+            { "say": "aud", "text": "Because you have no House. {exile}. {audline}" },
+            { "say": "aud", "text": "Nobody owns you, so nobody can call in what you owe. I cannot send anyone a House can lean on." }
+          ]},
+          { "text": "What is the Sixth Road?", "do": [
+            { "say": "aud", "text": "Six roads leave the Ring. Five go somewhere. The sixth runs eighteen days into open country and ends at a gate in a wall with nothing behind it." },
+            { "say": "aud", "text": "Five Houses pay, in rotation, to keep its hinges oiled. Four hundred and sixteen years. Nobody will discuss it." }
+          ]}
+        ]},
+        { "say": "aud", "text": "Go into the Ring. Keeper Nim - Mirrowen, gate rotation - is waiting inside the Second Gate for my detail. Then walk the Sixth Road and find out why my detail is silent." },
+        { "say": "aud", "text": "Standing instruction, and I mean it: maintain, log, and depart before dark. Nobody sleeps in the Ring." },
+        { "choice": [
+          { "text": "I'll go.", "do": [ { "say": "aud", "text": "Thirty measures of salt for the road. Pell has the rest." } ] },
+          { "text": "What's in it for me?", "do": [ { "say": "aud", "text": "Thirty measures of witness-salt now. Sixty when you come back. If you come back with the log, I will owe you, and I do not say that lightly." } ] }
+        ]},
+        { "salt": 30 },
+        { "set": "metAud" },
+        { "journal": "The Tolling", "text": "Every nineteen years, sound stops for a full dimming. Afterwards something is missing: a category, removed cleanly, leaving holes in sentences where the nouns were. The next Tolling is four years away." },
+        { "journal": "Commission detail", "text": "Commissioner Aud Verrel (Saldric, auditor) hired you because you have no House standing. Find Keeper Nim in the Ring, walk the Sixth Road, and learn why the gate detail has gone silent." },
+        { "journal": "The Standing Lack", "text": "No House garrisons the Concord Ring; all five maintain it. No House claims the Sixth's inheritance, titles, or roads. The sixth chair is set at every council and its vote counts as abstention. Any House that tries to fill the socket faces the other four." }
+      ]}
+    ],
+
+    "pell": [
+      { "shop": true }
+    ],
+
+    "archive": [
+      { "say": "narr", "text": "Three archive tents, each with a signboard declaring itself the official one. A fourth sign, older than the others, says DISPUTED." }
+    ],
+
+    "exit_waystation": [
+      { "if": "!metAud", "then": [
+        { "say": "pell", "text": "You haven't seen the Commissioner. She will want to have seen you." },
+        { "nudge": [8, 2] }
+      ], "else": [
+        { "area": "ring", "spawn": [14, 22] }
+      ]}
+    ],
+
+    "ring_enter": [
+      { "if": "!ringIntro", "then": [
+        { "set": "ringIntro" },
+        { "clock_reset": true },
+        { "card": "The Concord Ring", "text": "A city nobody alive built. Five Houses pay to keep it in repair, and none of them will sleep in it." },
+        { "say": "narr", "text": "Just inside the Second Gate a woman sits on the paving with her back against a wall, eating something that smells faintly of compost." },
+        { "say": "nim", "text": "You're Verrel's? You don't have a House on you. Good. The gate likes that better." },
+        { "say": "nim", "text": "I'm Nim. My lineage has held the Mirrowen quarter of the gate rotation for six generations. I talk to it. Don't make that face." },
+        { "say": "nim", "text": "The detail out there now is my cousin Tarrow's crew. They report every nine days. It's been twenty." },
+        { "say": "nim", "text": "And the log says the gate has been found open twice. It's been three times. I reported the third myself. Somebody took it out." },
+        { "choice": [
+          { "text": "Who could remove an entry from a commission log?", "do": [ { "say": "nim", "text": "Someone with a key to all five copies. Which is nobody. Which is the problem." } ] },
+          { "text": "Let's go.", "do": [] }
+        ]},
+        { "say": "nim", "text": "We leave by the Sixth Avenue, west off the central plaza. And we're out of the wall before dark, yes? I've done three nights here. I don't do four." },
+        { "join": "nim", "name": "Nim", "house": "mirrowen" },
+        { "journal": "Keeper Nim Sixth-Road", "text": "Mirrowen gate-keeper. She says the gate has been found open three times, not two. She reported the third; it never reached the log. Her cousin Tarrow's detail is twenty days overdue." }
+      ]}
+    ],
+
+    "socket1": [
+      { "set": "s1" }, { "add": "sockets" }, { "salt": 5 },
+      { "say": "narr", "text": "A crook of dark wood hangs on a peg at coat height. The handle is worn smooth by a thumb, in exactly one place. Catalogue entry 4,112. Function: none recorded." },
+      { "say": "nim", "text": "Feel that? Whoever used this used it every day. Every single day. And nobody alive can tell you what for." },
+      { "if": "sockets>=3", "then": [ { "journal": "Socket objects", "text": "Three catalogue entries checked against the Ring: a darkwood crook, a counter-slider, a pouring bowl. Every handle worn smooth by daily use. Not one has a function anybody can name." } ] }
+    ],
+    "socket2": [
+      { "set": "s2" }, { "add": "sockets" }, { "salt": 5 },
+      { "say": "narr", "text": "A counter with a groove cut along its length, and a stone slider that fits the groove exactly. You push it. It runs smooth, end to end, and stops with a soft click. Catalogue entry 7,309." },
+      { "say": "nim", "text": "Clicks at the end. Like it's counting something. I hate that one." },
+      { "if": "sockets>=3", "then": [ { "journal": "Socket objects", "text": "Three catalogue entries checked against the Ring: a darkwood crook, a counter-slider, a pouring bowl. Every handle worn smooth by daily use. Not one has a function anybody can name." } ] }
+    ],
+    "socket3": [
+      { "set": "s3" }, { "add": "sockets" }, { "salt": 5 },
+      { "say": "narr", "text": "A shallow bowl set into the wall at chest height, with a pouring lip on one side, as if for something poured every morning. Bone dry. No dust. Catalogue entry 10,044." },
+      { "say": "nim", "text": "No dust anywhere in here. Four hundred years. Nobody sweeps." },
+      { "if": "sockets>=3", "then": [ { "journal": "Socket objects", "text": "Three catalogue entries checked against the Ring: a darkwood crook, a counter-slider, a pouring bowl. Every handle worn smooth by daily use. Not one has a function anybody can name." } ] }
+    ],
+
+    "channel": [
+      { "say": "narr", "text": "Water runs in the cut channel, steady and clear. It runs inward, toward the center of the Ring. Further in, the channel narrows and goes under stone that nothing can cut." },
+      { "say": "nim", "text": "Three survey parties followed those. Two came back." }
+    ],
+
+    "chair": [
+      { "say": "narr", "text": "Six chairs stand in a ring at the center of the plaza. Five carry House marks. The sixth is plain darkwood, set and addressed. In four hundred and sixteen years of minutes, it has always abstained." },
+      { "choice": [
+        { "text": "Sit in it.", "do": [
+          { "say": "narr", "text": "You go to sit. You cannot. Not won't - your legs simply decline, politely, the way a hand declines a hot stove." },
+          { "say": "nim", "text": "Nobody can. Don't tell the Saldric I watched you try." },
+          { "set": "satChair" }
+        ]},
+        { "text": "Address it.", "do": [
+          { "say": "you", "text": "Who is still maintaining this place?" },
+          { "say": "narr", "text": "Nothing answers. Somewhere in the Ring, water keeps running inward." },
+          { "say": "nim", "text": "The minutes say it abstains. Eleven times, the clerk wrote something else. No two Houses agree on which eleven." }
+        ]},
+        { "text": "Leave it.", "do": [] }
+      ]},
+      { "journal": "The Sixth Chair", "text": "At every commission meeting, a sixth chair is set and addressed in the empty plaza. Its vote is recorded as abstention - except in eleven entries, scattered across four centuries, where the clerk wrote something else." }
+    ],
+
+    "oda": [
+      { "say": "narr", "text": "In the court, three people in good coats have a fourth backed against the wall. The fourth is clutching a bundle of net-cloth and swearing in Low Belt." },
+      { "say": "oda", "text": "-told you it's not FOR sale, it's for SHOWING, you salt-licking-" },
+      { "say": "runner", "text": "The commission comes through at dimming. We would like to be gone. Hand it over and you can step home." },
+      { "say": "oda", "text": "Can't step. Wall's in the way. You lot picked your spot." },
+      { "say": "runner", "text": "We did." },
+      { "say": "nim", "text": "Ring objects don't leave the Ring. Clause two. You want to tell them, or shall I?" },
+      { "fight": ["r1", "r2", "r3"] },
+      { "set": "odaFought" },
+      { "say": "oda", "text": "Oda Thaw. Low Belt, cloudfisher, net-master. Thanks. That was going to be ugly." },
+      { "say": "narr", "text": "She unwraps the net-cloth. A bronze lamp, trimmed and unlit, with a maker's mark in the old script. No corrosion at all." },
+      { "say": "oda", "text": "Came up in my nets eleven weeks back. Nothing comes up out of the cloud-bank clean. Nothing. They wanted it because it matches the Ring's bronze." },
+      { "say": "nim", "text": "Same metal as the hinges on the Sixth Gate." },
+      { "say": "oda", "text": "Then I'm coming with you. Somebody is buying lamps, and I want to know who is selling roads." },
+      { "set": "odaJoined" },
+      { "join": "oda", "name": "Oda", "house": "ikorran" },
+      { "journal": "The bronze lamp", "text": "Oda Thaw pulled a bronze lamp out of the cloud-bank below the Scatter. It has a maker's mark in the pre-Lack script and no corrosion - the same bronze as the Ring's fittings and the Sixth Gate's hinges. Ring-runners tried to take it." }
+    ],
+
+    "exit_ring_south": [
+      { "say": "nim", "text": "Wrong way. Verrel's detail goes out the Sixth." },
+      { "nudge": [14, 21] }
+    ],
+    "exit_ring_west": [
+      { "if": "!odaJoined", "then": [
+        { "say": "nim", "text": "Not yet. Something's going on in the south-east court - hear that? Somebody's shouting in Low Belt." },
+        { "nudge": [2, 3] }
+      ], "else": [
+        { "say": "narr", "text": "The Sixth Avenue runs west from the plaza, through a gate in the Ring's wall, and out into open country." },
+        { "say": "nim", "text": "Eighteen days. Pack light. Nobody stays at the shelter overnight. That's instruction three." },
+        { "area": "road", "spawn": [5, 62] }
+      ]}
+    ],
+
+    "road_enter": [
+      { "if": "!roadIntro", "then": [
+        { "set": "roadIntro" },
+        { "card": "The Sixth Road", "text": "Eighteen days at caravan pace, on paving no House can cut, toward a gate with nothing behind it." }
+      ]}
+    ],
+
+    "marker": [
+      { "say": "narr", "text": "A marker stone, the same jointless grey as the road. Someone has scratched a day count into the dust on it - not into the stone. Nothing marks the stone." }
+    ],
+
+    "hounds": [
+      { "say": "narr", "text": "Three dogs stand on the paving ahead, coats matted green with spores." },
+      { "say": "nim", "text": "Spore-hounds. Strays off a mortuary convoy. Bloom country is two hundred miles from here. They should not be this far out." },
+      { "say": "oda", "text": "Should and shouldn't. Ask them how they feel about it." },
+      { "fight": ["h1", "h2", "h3"] },
+      { "set": "houndsDone" }
+    ],
+
+    "walker": [
+      { "walker": true },
+      { "say": "narr", "text": "Half a mile off, a figure walks parallel to the road. It matches your pace. When you stop, it has already stopped." },
+      { "choice": [
+        { "text": "Call out to it.", "do": [
+          { "say": "narr", "text": "You call out. You hear your own voice a moment before you speak - then nothing, when you do." },
+          { "say": "nim", "text": "That's a Stillmouth thing. We are nowhere near the Stillmouth." }
+        ]},
+        { "text": "Ignore it and keep walking.", "do": [
+          { "say": "narr", "text": "You walk. It walks. For hours. At the dimming it is simply not there, and you cannot remember the moment it stopped being there." }
+        ]},
+        { "text": "Ask Oda to step to it.", "if": "party:ikorran", "do": [
+          { "say": "oda", "text": "I've got it in plain sight. Clean line." },
+          { "say": "narr", "text": "Oda steps. She does not move." },
+          { "say": "oda", "text": "It's in plain sight and it is not near. That isn't how anything works." }
+        ]}
+      ]},
+      { "walker": false },
+      { "set": "walkerGone" },
+      { "journal": "The parallel walker", "text": "Half a mile off the Sixth Road, a figure matched our pace for hours. Voices arrived before they were spoken. Oda could see it but could not step to it: in plain sight, and not near." }
+    ],
+
+    "camp": [
+      { "say": "nim", "text": "Day twelve. We camp. The road will still be here - it's the one thing that always is." },
+      { "run": "camp_rest" }
+    ],
+    "camp_rest": [
+      { "heal": true },
+      { "say": "narr", "text": "You make camp beside the paving. The party rests. (Health fully restored. Progress saved.)" },
+      { "choice": [
+        { "text": "Ask Nim about the gate.", "do": [
+          { "say": "nim", "text": "It opens. It closes. We oil it every quarter. On the far side, scrub, every direction. The standing instruction is three lines, and the third is: the gate is left as it was found. Closed, latched, unlocked." },
+          { "say": "nim", "text": "Unlocked. Five Houses, four hundred years, and nobody ever thought to lock it. Or everybody thought not to." }
+        ]},
+        { "text": "Ask Oda about the pins.", "do": [
+          { "say": "oda", "text": "The Scatter is held together by nine hundred old pins. Doorways between shards. Nobody can make new ones that good." },
+          { "say": "oda", "text": "Old Reth Pinhold surveyed the ancient ones. About forty end at the Concord Ring. And one - the forty-first - ends somewhere out this way. Nobody knows where. He published that. Nobody has invited him to dinner since." }
+        ]},
+        { "text": "Talk about where you came from.", "do": [
+          { "say": "you", "text": "{origin}" },
+          { "say": "nim", "text": "So nobody's waiting for you either. That's two of us." },
+          { "if": "house:thessal", "then": [ { "say": "oda", "text": "Sorry - what were you saying? Oh. Right. Sorry. I was listening, I swear." } ] }
+        ]},
+        { "text": "Sleep.", "leave": true, "do": [] }
+      ], "loop": true }
+    ],
+
+    "swine": [
+      { "say": "narr", "text": "A hollow-swine roots at the road's edge: pale, long-legged, bloated by some pressure it no longer lives under. A cloud of bloom-moths lifts off its back." },
+      { "say": "oda", "text": "That's a Sink animal. On the Sixth Road. Two hundred miles uphill of anywhere it could breathe." },
+      { "say": "nim", "text": "Things are walking toward the gate. Let's not be things." },
+      { "fight": ["sw", "mo"] },
+      { "set": "swineDone" }
+    ],
+
+    "exit_road": [
+      { "say": "narr", "text": "On the eighteenth day, a grey line rises out of the scrub ahead." },
+      { "area": "gate", "spawn": [9, 15] }
+    ],
+
+    "gate_enter": [
+      { "if": "!gateIntro", "then": [
+        { "set": "gateIntro" },
+        { "card": "The Gate", "text": "A wall of Ring stone a hundred and forty feet long, standing alone in the scrub." },
+        { "say": "narr", "text": "In the middle of the wall, the gate. Twin leaves of darkwood on bronze hinges. Both leaves stand open." },
+        { "say": "nim", "text": "Open." },
+        { "say": "nim", "text": "Toward us." }
+      ]}
+    ],
+
+    "sellim": [
+      { "say": "narr", "text": "Someone is strapping cable around the shelter's corner posts. Two broad men stand braced at the anchor points, legs set wide." },
+      { "say": "sellim", "text": "Stay back from the shelter. It's coming down." },
+      { "choice": [
+        { "text": "There might be people inside.", "do": [ { "say": "sellim", "text": "Then they have had notification. I called it three times. That is the form." } ] },
+        { "text": "On whose order?", "do": [ { "say": "sellim", "text": "On a commission. Bonded, licensed. I take down buildings. That is all I do." } ] }
+      ]},
+      { "say": "nim", "text": "The log is in there. Tarrow's log." },
+      { "say": "sellim", "text": "Then it comes down with the roof. I'm sorry. I am not paid to be sorry, but I am." },
+      { "toast": "When Sellim starts shouldering the shelter, break her focus with Set (Undrum) or Fix (Thessal) - or spread out and brace for the Shear." },
+      { "fight": ["sellim", "a1", "a2"] },
+      { "set": "sellimFought" },
+      { "set": "sellimDone" },
+      { "say": "narr", "text": "Sellim goes down on one knee, breathing hard, and lets the cable drop." },
+      { "say": "sellim", "text": "Fine. Have your shelter." },
+      { "choice": [
+        { "text": "Who commissioned you?", "do": [] },
+        { "text": "Why take a job like this?", "do": [ { "say": "sellim", "text": "My brother is my carry. Lip-born, no pressure tolerance. I can't bring him home. Jobs like this pay for the up-baskets." } ] }
+      ]},
+      { "say": "sellim", "text": "Read the seal yourself." },
+      { "say": "narr", "text": "She hands you the warrant. It is stamped with a seal. You look at it, and look again, and cannot agree with yourself about its shape." },
+      { "say": "nim", "text": "That's the sixth seal." },
+      { "say": "sellim", "text": "It came through the Marrowcourt like any other paper. Paid in lodestone marrow. Nobody pays in marrow." },
+      { "choice": [
+        { "text": "Let her go.", "do": [ { "say": "sellim", "text": "Notification received." } ] },
+        { "text": "Tell her to find you at the Ring if she learns more.", "do": [
+          { "say": "sellim", "text": "I'll be at the Lip. If you need something taken down, I'm bonded and I'm good." },
+          { "set": "sellimAlly" }
+        ]}
+      ]},
+      { "set": "sellimGone" },
+      { "journal": "The warrant", "text": "Sellim Ninth-Hand, an Undrum cable-knife, was commissioned to demolish the gate shelter with the log inside. The warrant came through the Marrowcourt, paid in lodestone marrow, stamped with a seal whose shape nobody can agree on: the sixth seal." }
+    ],
+
+    "shelter": [
+      { "if": "!sellimDone", "then": [
+        { "say": "sellim", "text": "Back from the shelter. I said it's coming down." }
+      ], "else": [
+        { "if": "readLog", "then": [
+          { "say": "narr", "text": "The shelter is stocked, clean and empty. Instruction three: whoever stocks it does not stay the night." }
+        ], "else": [
+          { "say": "narr", "text": "Inside: stocked shelves, a cold stove, four bedrolls that were never unrolled. The gate log lies open on the table." },
+          { "say": "log", "text": "Day 18. Arrived. Gate closed, latched, unlocked. Oiled hinges per rotation." },
+          { "say": "log", "text": "Day 19. At dimming the gate stood open. Not by us. We closed it. We latched it." },
+          { "say": "log", "text": "Day 20. It is open again. It opens toward us. Tarrow is going through to close it from the other side." },
+          { "say": "log", "text": "Day 20, later. We are going to [[socket]]." },
+          { "say": "nim", "text": "That's a hole. That's a socket. That's what the Tolling does to writing." },
+          { "say": "oda", "text": "There's no Tolling for four years." },
+          { "say": "nim", "text": "I know." },
+          { "set": "readLog" },
+          { "heal": true },
+          { "journal": "Tarrow's log", "text": "Day 20: the gate opened toward the detail twice. Tarrow went through to close it from the far side. The last entry ends in a socket - a complete sentence with the noun missing - four years before any Tolling." }
+        ]}
+      ]}
+    ],
+
+    "gate": [
+      { "if": "!readLog", "then": [
+        { "say": "narr", "text": "Twin leaves of darkwood, open toward you, on bronze hinges that have never corroded." },
+        { "say": "nim", "text": "Log first. Then the gate. That's the order." }
+      ], "else": [
+        { "say": "narr", "text": "You step between the open leaves. On the far side: scrub, to the horizon, in every direction. Exactly as surveyed." },
+        { "say": "narr", "text": "Then Oda crouches and brushes at the dust with her hand. Under the scrub, under the grit: grey, jointless stone." },
+        { "say": "oda", "text": "The road doesn't end at the gate. I can see the line it takes. I just can't get near it." },
+        { "say": "nim", "text": "Tarrow went this way." },
+        { "choice": [
+          { "text": "Follow the road.", "do": [] },
+          { "text": "Close the gate behind you.", "do": [ { "say": "narr", "text": "You close the gate behind you, and latch it, and do not lock it. When you look back, it is open again. Toward you." } ] }
+        ]},
+        { "set": "chapter1" },
+        { "card": "End of Chapter One", "text": "The Sixth Road does not end at the gate. Somewhere beyond it, Tarrow's detail went to close a door from the other side. Chapter Two - Eighteen Days Out - is next." },
+        { "title": true }
+      ]}
+    ]
+  }
+}
